@@ -12,14 +12,14 @@ void main() {
 
 
 class MyApp extends StatelessWidget {
-  // const MyApp({Key? key}) : super(key: key);
-  const MyApp({super.key});
+
+  const MyApp({super.key});   //constructor
 
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'NFC reader APP',
       theme: ThemeData(
         // This is the theme of your application.
         //
@@ -32,7 +32,7 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.blue,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MyHomePage(title: 'Home Page'),
     );
   }
 }
@@ -56,9 +56,8 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-  String? _resultado;
 
+  String? _resultado;
 
   @override
   void initState() {
