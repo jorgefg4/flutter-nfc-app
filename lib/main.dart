@@ -1,19 +1,15 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:prueba1/model/record.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-
 void main() {
   runApp(const MyApp());
 }
 
-
 class MyApp extends StatelessWidget {
-
-  const MyApp({super.key});   //constructor
+  const MyApp({super.key}); //constructor
 
   // This widget is the root of your application.
   @override
@@ -30,7 +26,7 @@ class MyApp extends StatelessWidget {
         // or simply save your changes to "hot reload" in a Flutter IDE).
         // Notice that the counter didn't reset back to zero; the application
         // is not restarted.
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.deepPurple,
       ),
       home: const MyHomePage(title: 'Home Page'),
     );
@@ -56,13 +52,11 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-
   String? _resultado;
 
   @override
   void initState() {
     super.initState();
-    // initNFC();
     setState(() {
       _resultado = "Pulsar para leer";
     });
@@ -81,8 +75,7 @@ class _MyHomePageState extends State<MyHomePage> {
         if (ndef == null) {
           print('Tag is not compatible with NDEF or is null');
           return;
-        }
-        else{
+        } else {
           print('Tag is compatible with NDEF');
 
           NdefMessage? data = await ndef.read();
@@ -92,26 +85,27 @@ class _MyHomePageState extends State<MyHomePage> {
           NdefTypeNameFormat tipo = mensaje.typeNameFormat;
           print("El tipo de mensaje leido es: " + tipo.name);
 
-          if(mensaje.typeNameFormat == NdefTypeNameFormat.nfcWellknown)
-            {
-                final _mensaje = Record.fromNdef(mensaje);
-                if (_mensaje is WellknownUriRecord)
-                  {
-                    //uso setState para que se actualice el texto en la interfaz
-                    setState(() {
-                      _resultado = _mensaje.uri.toString();
-                    });
+          if (mensaje.typeNameFormat == NdefTypeNameFormat.nfcWellknown) {
+            final _mensaje = Record.fromNdef(mensaje);
 
-                    //lanzo el navegador predeterminado del movil con la url
-                    if (await canLaunchUrl(_mensaje.uri)) {
-                      await launchUrl(   _mensaje.uri,
-                        mode: LaunchMode.externalApplication,
-                      );
-                    } else {
-                      throw 'No se pudo abrir la URL';
-                    }
-                  }
+            //si el mensaje es una URI
+            if (_mensaje is WellknownUriRecord) {
+              //uso setState para que se actualice el texto en la interfaz
+              setState(() {
+                _resultado = _mensaje.uri.toString();
+              });
+
+              //lanzo el navegador predeterminado del movil con la url
+              if (await canLaunchUrl(_mensaje.uri)) {
+                await launchUrl(
+                  _mensaje.uri,
+                  mode: LaunchMode.externalApplication,
+                );
+              } else {
+                throw 'No se pudo abrir la URL';
+              }
             }
+          }
         }
       });
     } catch (e) {
@@ -119,7 +113,6 @@ class _MyHomePageState extends State<MyHomePage> {
       print('Error en NFC: $e');
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -129,10 +122,49 @@ class _MyHomePageState extends State<MyHomePage> {
     // The Flutter framework has been optimized to make rerunning build methods
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
+
+    const drawerHeader = UserAccountsDrawerHeader(
+      accountName: Text('User Name'),
+      accountEmail: Text('user.name@email.com'),
+      currentAccountPicture: CircleAvatar(
+        backgroundColor: Colors.white,
+        child: FlutterLogo(size: 42.0),
+      ),
+      otherAccountsPictures: <Widget>[
+        CircleAvatar(
+          backgroundColor: Colors.yellow,
+          child: Text('A'),
+        ),
+        CircleAvatar(
+          backgroundColor: Colors.red,
+          child: Text('B'),
+        )
+      ],
+    );
+
+    final drawerItems = ListView(
+      children: <Widget>[
+        drawerHeader,
+        ListTile(
+          title: const Text('To page 1'),
+          onTap: () => Navigator.of(context).push(_NewPage(1)),
+        ),
+        ListTile(
+          title: const Text('To page 2'),
+          onTap: () => Navigator.of(context).push(_NewPage(2)),
+        ),
+        ListTile(
+          title: const Text('other drawer item'),
+          onTap: () {},
+        ),
+      ],
+    );
+
     return Scaffold(
       appBar: AppBar(
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
+        backgroundColor: Colors.blueAccent,
         title: Text(widget.title),
       ),
       body: Center(
@@ -170,6 +202,27 @@ class _MyHomePageState extends State<MyHomePage> {
         tooltip: 'Read tag',
         child: const Icon(Icons.tap_and_play),
       ), // This trailing comma makes auto-formatting nicer for build methods.
+      drawer: Drawer(
+        child: drawerItems,
+      ),
     );
   }
+}
+
+// <void> means this route returns nothing.
+class _NewPage extends MaterialPageRoute<void> {
+  _NewPage(int id)
+      : super(
+          builder: (BuildContext context) {
+            return Scaffold(
+              appBar: AppBar(
+                title: Text('Page $id'),
+                elevation: 1.0,
+              ),
+              body: Center(
+                child: Text('Page $id'),
+              ),
+            );
+          },
+        );
 }
