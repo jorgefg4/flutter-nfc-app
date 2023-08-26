@@ -122,11 +122,13 @@ class _MyHomePageState extends State<MyHomePage> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
+        TextEditingController _controller = TextEditingController(text: "https://"); // Establece el valor inicial
         String _textoIngresado = ""; // Variable para almacenar el texto ingresado
 
         return AlertDialog(
           title: Text("Ingresar URL"),
           content: TextField(
+            controller: _controller, // Usa el TextEditingController
             onChanged: (value) {
               _textoIngresado = value;
             },
@@ -178,6 +180,9 @@ class _MyHomePageState extends State<MyHomePage> {
         }
 
         print("URL escrita en la etiqueta NFC: $_urlToWrite");
+        setState(() {
+          _resultado = "Tag escrita con éxito!";
+        });
         });
     } catch (e) {
       // Manejar cualquier error
