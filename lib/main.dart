@@ -15,7 +15,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'NFC reader APP',
+      title: 'NFC writer APP',
       theme: ThemeData(
         // This is the theme of your application.
         //
@@ -53,66 +53,142 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   String? _resultado;
+  String? _urlToWrite;
 
   @override
   void initState() {
     super.initState();
     setState(() {
-      _resultado = "Pulsar para leer";
+      _resultado = "Pulsar para escribir";
     });
   }
 
-  void initNFC() async {
+  // void initNFC() async {
+  //   try {
+  //     setState(() {
+  //       _resultado = "Acercar tag para escribir";
+  //     });
+  //     await NfcManager.instance.startSession(onDiscovered: (NfcTag tag) async {
+  //       // Se ha descubierto una etiqueta NFC
+  //       print('Tag descubierta: ${tag.data}');
+  //
+  //       Ndef? ndef = Ndef.from(tag);
+  //       if (ndef == null) {
+  //         print('Tag is not compatible with NDEF or is null');
+  //         return;
+  //       } else {
+  //         print('Tag is compatible with NDEF');
+  //
+  //         NdefMessage? data = await ndef.read();
+  //         List<NdefRecord> lista = data.records;
+  //         NdefRecord mensaje = lista.first;
+  //
+  //         NdefTypeNameFormat tipo = mensaje.typeNameFormat;
+  //         print("El tipo de mensaje leido es: " + tipo.name);
+  //
+  //         if (mensaje.typeNameFormat == NdefTypeNameFormat.nfcWellknown) {
+  //           final _mensaje = Record.fromNdef(mensaje);
+  //
+  //           //si el mensaje es una URI
+  //           if (_mensaje is WellknownUriRecord) {
+  //             //uso setState para que se actualice el texto en la interfaz
+  //             setState(() {
+  //               _resultado = _mensaje.uri.toString();
+  //             });
+  //
+  //             //lanzo el navegador predeterminado del movil con la url
+  //             if (await canLaunchUrl(_mensaje.uri)) {
+  //               await launchUrl(
+  //                 _mensaje.uri,
+  //                 mode: LaunchMode.externalApplication,
+  //               );
+  //             } else {
+  //               throw 'No se pudo abrir la URL';
+  //             }
+  //           }
+  //         }
+  //       }
+  //     });
+  //   } catch (e) {
+  //     // Manejar cualquier error
+  //     print('Error en NFC: $e');
+  //   }
+  // }
+
+
+  /////////////////////
+///////////////////
+  void _mostrarCuadroTexto() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        String _textoIngresado = ""; // Variable para almacenar el texto ingresado
+
+        return AlertDialog(
+          title: Text("Ingresar URL"),
+          content: TextField(
+            onChanged: (value) {
+              _textoIngresado = value;
+            },
+            // decoration: InputDecoration(labelText: "Texto"),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text("Cancelar"),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: Text("Aceptar"),
+              onPressed: () {
+                // Aquí puedes hacer algo con el texto ingresado, como actualizar una variable en el estado
+                setState(() {
+                  _urlToWrite = _textoIngresado;
+                });
+                //llamo al método para iniciar escritura
+                writeNFC();
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
+
+  void writeNFC() async {
     try {
       setState(() {
-        _resultado = "Esperando lectura...";
+        _resultado = "Acercar tag para escribir";
       });
+
       await NfcManager.instance.startSession(onDiscovered: (NfcTag tag) async {
         // Se ha descubierto una etiqueta NFC
         print('Tag descubierta: ${tag.data}');
+        final ndef = Ndef.from(tag);
 
-        Ndef? ndef = Ndef.from(tag);
-        if (ndef == null) {
-          print('Tag is not compatible with NDEF or is null');
-          return;
-        } else {
-          print('Tag is compatible with NDEF');
-
-          NdefMessage? data = await ndef.read();
-          List<NdefRecord> lista = data.records;
-          NdefRecord mensaje = lista.first;
-
-          NdefTypeNameFormat tipo = mensaje.typeNameFormat;
-          print("El tipo de mensaje leido es: " + tipo.name);
-
-          if (mensaje.typeNameFormat == NdefTypeNameFormat.nfcWellknown) {
-            final _mensaje = Record.fromNdef(mensaje);
-
-            //si el mensaje es una URI
-            if (_mensaje is WellknownUriRecord) {
-              //uso setState para que se actualice el texto en la interfaz
-              setState(() {
-                _resultado = _mensaje.uri.toString();
-              });
-
-              //lanzo el navegador predeterminado del movil con la url
-              if (await canLaunchUrl(_mensaje.uri)) {
-                await launchUrl(
-                  _mensaje.uri,
-                  mode: LaunchMode.externalApplication,
-                );
-              } else {
-                throw 'No se pudo abrir la URL';
-              }
-            }
-          }
+        if (ndef != null) {
+          final message = NdefMessage([
+            NdefRecord.createUri(Uri.parse('$_urlToWrite')),
+          ]);
+          await ndef.write(message);  //escribo la url en la tag
         }
-      });
+
+        print("URL escrita en la etiqueta NFC: $_urlToWrite");
+        });
     } catch (e) {
       // Manejar cualquier error
       print('Error en NFC: $e');
     }
   }
+  ///////////////////////////
+  /////////////////////////
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -188,7 +264,7 @@ class _MyHomePageState extends State<MyHomePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             const Text(
-              'The URI is: ',
+              'Write an URI: ',
             ),
             Text(
               '$_resultado',
@@ -198,9 +274,9 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: initNFC,
-        tooltip: 'Read tag',
-        child: const Icon(Icons.tap_and_play),
+        onPressed: _mostrarCuadroTexto,
+        tooltip: 'Write tag',
+        child: const Icon(Icons.save_as),
       ), // This trailing comma makes auto-formatting nicer for build methods.
       drawer: Drawer(
         child: drawerItems,
@@ -226,3 +302,8 @@ class _NewPage extends MaterialPageRoute<void> {
           },
         );
 }
+
+
+
+
+
