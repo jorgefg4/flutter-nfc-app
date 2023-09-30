@@ -15,7 +15,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'NFC writer APP',
+      title: 'NFC APP',
       theme: ThemeData(
         // This is the theme of your application.
         //
@@ -52,7 +52,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  String? _resultado;
+  String _resultado = " ";
   String? _urlToWrite;
 
   @override
@@ -63,61 +63,60 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  // void initNFC() async {
-  //   try {
-  //     setState(() {
-  //       _resultado = "Acercar tag para escribir";
-  //     });
-  //     await NfcManager.instance.startSession(onDiscovered: (NfcTag tag) async {
-  //       // Se ha descubierto una etiqueta NFC
-  //       print('Tag descubierta: ${tag.data}');
-  //
-  //       Ndef? ndef = Ndef.from(tag);
-  //       if (ndef == null) {
-  //         print('Tag is not compatible with NDEF or is null');
-  //         return;
-  //       } else {
-  //         print('Tag is compatible with NDEF');
-  //
-  //         NdefMessage? data = await ndef.read();
-  //         List<NdefRecord> lista = data.records;
-  //         NdefRecord mensaje = lista.first;
-  //
-  //         NdefTypeNameFormat tipo = mensaje.typeNameFormat;
-  //         print("El tipo de mensaje leido es: " + tipo.name);
-  //
-  //         if (mensaje.typeNameFormat == NdefTypeNameFormat.nfcWellknown) {
-  //           final _mensaje = Record.fromNdef(mensaje);
-  //
-  //           //si el mensaje es una URI
-  //           if (_mensaje is WellknownUriRecord) {
-  //             //uso setState para que se actualice el texto en la interfaz
-  //             setState(() {
-  //               _resultado = _mensaje.uri.toString();
-  //             });
-  //
-  //             //lanzo el navegador predeterminado del movil con la url
-  //             if (await canLaunchUrl(_mensaje.uri)) {
-  //               await launchUrl(
-  //                 _mensaje.uri,
-  //                 mode: LaunchMode.externalApplication,
-  //               );
-  //             } else {
-  //               throw 'No se pudo abrir la URL';
-  //             }
-  //           }
-  //         }
-  //       }
-  //     });
-  //   } catch (e) {
-  //     // Manejar cualquier error
-  //     print('Error en NFC: $e');
-  //   }
-  // }
+  void initNFC() async {
+    try {
+      setState(() {
+        _resultado = "Esperando lectura...";
+      });
+      await NfcManager.instance.startSession(onDiscovered: (NfcTag tag) async {
+        // Se ha descubierto una etiqueta NFC
+        print('Tag descubierta: ${tag.data}');
+
+        Ndef? ndef = Ndef.from(tag);
+        if (ndef == null) {
+          print('Tag is not compatible with NDEF or is null');
+          return;
+        } else {
+          print('Tag is compatible with NDEF');
+
+          NdefMessage? data = await ndef.read();
+          List<NdefRecord> lista = data.records;
+          NdefRecord mensaje = lista.first;
+
+          NdefTypeNameFormat tipo = mensaje.typeNameFormat;
+          print("El tipo de mensaje leido es: " + tipo.name);
+
+          if (mensaje.typeNameFormat == NdefTypeNameFormat.nfcWellknown) {
+            final _mensaje = Record.fromNdef(mensaje);
+
+            //si el mensaje es una URI
+            if (_mensaje is WellknownUriRecord) {
+              //uso setState para que se actualice el texto en la interfaz
+              setState(() {
+                _resultado = _mensaje.uri.toString();
+              });
+
+              //lanzo el navegador predeterminado del movil con la url
+              if (await canLaunchUrl(_mensaje.uri)) {
+                await launchUrl(
+                  _mensaje.uri,
+                  mode: LaunchMode.externalApplication,
+                );
+              } else {
+                throw 'No se pudo abrir la URL';
+              }
+            }
+          }
+        }
+      });
+    } catch (e) {
+      // Manejar cualquier error
+      print('Error en NFC: $e');
+    }
+  }
 
 
-  /////////////////////
-///////////////////
+
   void _mostrarCuadroTexto() {
     showDialog(
       context: context,
@@ -157,14 +156,14 @@ class _MyHomePageState extends State<MyHomePage> {
         );
       },
     );
-  }
+  } // _mostrarCuadroTexto()
 
 
 
   void writeNFC() async {
     try {
       setState(() {
-        _resultado = "Acercar tag para escribir";
+        _resultado = "Acerca tu teléfono a otro para compartir la URL";
       });
 
       await NfcManager.instance.startSession(onDiscovered: (NfcTag tag) async {
@@ -177,20 +176,22 @@ class _MyHomePageState extends State<MyHomePage> {
             NdefRecord.createUri(Uri.parse('$_urlToWrite')),
           ]);
           await ndef.write(message);  //escribo la url en la tag
+
+          print("URL escrita en la etiqueta NFC: $_urlToWrite");
+          setState(() {
+            _resultado = "URL transmitida con éxito!";
+          });
+        } else{
+          print("Etiqueta no compatible");
         }
 
-        print("URL escrita en la etiqueta NFC: $_urlToWrite");
-        setState(() {
-          _resultado = "Tag escrita con éxito!";
-        });
+
         });
     } catch (e) {
       // Manejar cualquier error
       print('Error en NFC: $e');
     }
-  }
-  ///////////////////////////
-  /////////////////////////
+  } // writeNFC()
 
 
 
@@ -227,12 +228,12 @@ class _MyHomePageState extends State<MyHomePage> {
       children: <Widget>[
         drawerHeader,
         ListTile(
-          title: const Text('To page 1'),
-          onTap: () => Navigator.of(context).push(_NewPage(1)),
+          title: const Text('Read NFC'),
+          onTap: () => Navigator.of(context).push(_NewPage(1, "Read NFC", initNFC, _resultado = "Pulsar para leer", "The URI is: ", Icon(Icons.tap_and_play))),
         ),
         ListTile(
-          title: const Text('To page 2'),
-          onTap: () => Navigator.of(context).push(_NewPage(2)),
+          title: const Text('Write NFC'),
+          onTap: () => Navigator.of(context).push(_NewPage(2, "Write NFC", _mostrarCuadroTexto, _resultado = "Pulsar para escribir", "Write an URL: ", Icon(Icons.save_as))),
         ),
         ListTile(
           title: const Text('other drawer item'),
@@ -292,20 +293,69 @@ class _MyHomePageState extends State<MyHomePage> {
 
 // <void> means this route returns nothing.
 class _NewPage extends MaterialPageRoute<void> {
-  _NewPage(int id)
+  final String title;
+  // final Function onPressed;
+  final VoidCallback onPressed;
+  final String resultado;
+  final String subtitulo;
+  final Icon icono;
+
+  _NewPage(int id, this.title, this.onPressed, this.resultado, this.subtitulo, this.icono)
       : super(
           builder: (BuildContext context) {
-            return Scaffold(
-              appBar: AppBar(
-                title: Text('Page $id'),
-                elevation: 1.0,
-              ),
-              body: Center(
-                child: Text('Page $id'),
-              ),
-            );
-          },
-        );
+
+              return Scaffold(
+                appBar: AppBar(
+                  // Here we take the value from the MyHomePage object that was created by
+                  // the App.build method, and use it to set our appbar title.
+                  backgroundColor: Colors.blueAccent,
+                  title: Text(title),
+                ),
+                body: Center(
+                  // Center is a layout widget. It takes a single child and positions it
+                  // in the middle of the parent.
+                  child: Column(
+                    // Column is also a layout widget. It takes a list of children and
+                    // arranges them vertically. By default, it sizes itself to fit its
+                    // children horizontally, and tries to be as tall as its parent.
+                    //
+                    // Invoke "debug painting" (press "p" in the console, choose the
+                    // "Toggle Debug Paint" action from the Flutter Inspector in Android
+                    // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
+                    // to see the wireframe for each widget.
+                    //
+                    // Column has various properties to control how it sizes itself and
+                    // how it positions its children. Here we use mainAxisAlignment to
+                    // center the children vertically; the main axis here is the vertical
+                    // axis because Columns are vertical (the cross axis would be
+                    // horizontal).
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      Text(
+                        subtitulo
+                      ),
+                      Text(
+                        resultado,
+                        style: Theme
+                            .of(context)
+                            .textTheme
+                            .headlineMedium,
+                      ),
+                    ],
+                  ),
+                ),
+                floatingActionButton: FloatingActionButton(
+                  // onPressed: () => onPressed,
+                  onPressed: onPressed,
+                  tooltip: 'Write tag',
+                  child: icono,
+                ), // This trailing comma makes auto-formatting nicer for build methods.
+                // drawer: Drawer(
+                //   child: drawerItems,
+                // ),
+              );
+            }
+        );  // _NewPage
 }
 
 
