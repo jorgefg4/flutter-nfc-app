@@ -1,8 +1,10 @@
 import 'dart:convert';
+// import 'dart:js';
 import 'package:flutter/material.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:prueba1/model/record.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 
 void main() {
   runApp(const MyApp());
@@ -52,16 +54,147 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  String _resultado = " ";
-  String? _urlToWrite;
 
   @override
   void initState() {
     super.initState();
-    setState(() {
-      _resultado = "Pulsar para escribir";
-    });
+    // setState(() {
+    // });
   }
+
+
+  @override
+  Widget build(BuildContext context) {
+    // This method is rerun every time setState is called, for instance as done
+    // by the _incrementCounter method above.
+    //
+    // The Flutter framework has been optimized to make rerunning build methods
+    // fast, so that you can just rebuild anything that needs updating rather
+    // than having to individually change instances of widgets.
+
+    const drawerHeader = UserAccountsDrawerHeader(
+      accountName: Text('User Name'),
+      accountEmail: Text('user.name@email.com'),
+      currentAccountPicture: CircleAvatar(
+        backgroundColor: Colors.white,
+        child: FlutterLogo(size: 42.0),
+      ),
+      otherAccountsPictures: <Widget>[
+        CircleAvatar(
+          backgroundColor: Colors.yellow,
+          child: Text('A'),
+        ),
+        CircleAvatar(
+          backgroundColor: Colors.red,
+          child: Text('B'),
+        )
+      ],
+    );
+
+    // final drawerItems = ListView(
+    //   children: <Widget>[
+    //     drawerHeader,
+    //     ListTile(
+    //       title: const Text('Read NFC'),
+    //       // onTap: () => Navigator.of(context).push(_NewPage(1, "Read NFC", initNFC, _resultado = "Pulsar para leer", "The URI is: ", Icon(Icons.tap_and_play))),
+    //       onTap: () => Navigator.of(context).push(_NewPage(1, "Read NFC","The URI is: ", Icon(Icons.tap_and_play))),
+    //     ),
+    //     ListTile(
+    //       title: const Text('Write NFC'),
+    //       // onTap: () => Navigator.of(context).push(_NewPage(2, "Write NFC", _mostrarCuadroTexto, _resultado = "Pulsar para escribir", "Write an URL: ", Icon(Icons.save_as))),
+    //       onTap: () => Navigator.of(context).push(_NewPage(2, "Write NFC", "Write an URL: ", Icon(Icons.save_as))),
+    //     ),
+    //     ListTile(
+    //       title: const Text('other drawer item'),
+    //       onTap: () {},
+    //     ),
+    //   ],
+    // );
+
+    final drawerItems = ListView(
+      children: <Widget>[
+        drawerHeader,
+        ListTile(
+          title: const Text('Read NFC'),
+          onTap: () {
+            Navigator.of(context).push(MaterialPageRoute(builder: (context) => NewPage1()));
+          },
+        ),
+        ListTile(
+          title: const Text('Write NFC'),
+          onTap: () {
+            Navigator.of(context).push(MaterialPageRoute(builder: (context) => NewPage2()));
+          },
+        ),
+        ListTile(
+          title: const Text('other drawer item'),
+          onTap: () {},
+        ),
+      ],
+    );
+
+
+
+
+    return Scaffold(
+      appBar: AppBar(
+        // Here we take the value from the MyHomePage object that was created by
+        // the App.build method, and use it to set our appbar title.
+        backgroundColor: Colors.blueAccent,
+        title: Text(widget.title),
+      ),
+      body: Center(
+        // Center is a layout widget. It takes a single child and positions it
+        // in the middle of the parent.
+        child: Column(
+          // Column is also a layout widget. It takes a list of children and
+          // arranges them vertically. By default, it sizes itself to fit its
+          // children horizontally, and tries to be as tall as its parent.
+          //
+          // Invoke "debug painting" (press "p" in the console, choose the
+          // "Toggle Debug Paint" action from the Flutter Inspector in Android
+          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
+          // to see the wireframe for each widget.
+          //
+          // Column has various properties to control how it sizes itself and
+          // how it positions its children. Here we use mainAxisAlignment to
+          // center the children vertically; the main axis here is the vertical
+          // axis because Columns are vertical (the cross axis would be
+          // horizontal).
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            const Text(
+              'Write an URI: ',
+            ),
+            Text(
+              // '$_resultado',
+              'hola',
+              style: Theme.of(context).textTheme.headlineMedium,
+            ),
+          ],
+        ),
+      ),
+      // floatingActionButton: FloatingActionButton(
+      //   onPressed: _mostrarCuadroTexto,
+      //   tooltip: 'Write tag',
+      //   child: const Icon(Icons.save_as),
+      // ), // This trailing comma makes auto-formatting nicer for build methods.
+      drawer: Drawer(
+        child: drawerItems,
+      ),
+    );
+  }
+}
+
+
+
+class NewPage1 extends StatefulWidget {
+  @override
+  _NewPage1State createState() => _NewPage1State();
+}
+
+class _NewPage1State  extends State<NewPage1> {
+  String _resultado = "Pulsar para leer";
 
   void initNFC() async {
     try {
@@ -93,8 +226,11 @@ class _MyHomePageState extends State<MyHomePage> {
             if (_mensaje is WellknownUriRecord) {
               //uso setState para que se actualice el texto en la interfaz
               setState(() {
-                _resultado = _mensaje.uri.toString();
+                _resultado = _mensaje.uri.toString() + " Abriendo navegador...";
               });
+
+              // esperar 1 segundo antes de abrir el navegador
+              await Future.delayed(Duration(milliseconds: 1000));
 
               //lanzo el navegador predeterminado del movil con la url
               if (await canLaunchUrl(_mensaje.uri)) {
@@ -102,6 +238,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   _mensaje.uri,
                   mode: LaunchMode.externalApplication,
                 );
+                return;
               } else {
                 throw 'No se pudo abrir la URL';
               }
@@ -113,11 +250,51 @@ class _MyHomePageState extends State<MyHomePage> {
       // Manejar cualquier error
       print('Error en NFC: $e');
     }
+  } // initNFC()
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Read NFC"),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Text('$_resultado',
+              style: Theme.of(context).textTheme.headlineMedium,
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: initNFC,
+        tooltip: 'Read NFC',
+        child: const Icon(Icons.tap_and_play),
+      ),
+    );
   }
+} // _NewPage1State
 
 
 
-  void _mostrarCuadroTexto() {
+
+
+
+
+
+class NewPage2 extends StatefulWidget {
+  @override
+  _NewPage2State createState() => _NewPage2State();
+}
+
+class _NewPage2State  extends State<NewPage2> {
+  String _resultado = "Pulsar para escribir";
+  String? _urlToWrite;
+
+  void _mostrarCuadroTexto(BuildContext context) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -159,8 +336,7 @@ class _MyHomePageState extends State<MyHomePage> {
   } // _mostrarCuadroTexto()
 
 
-
-  void writeNFC() async {
+    void writeNFC() async {
     try {
       setState(() {
         _resultado = "Acerca tu teléfono a otro para compartir la URL";
@@ -184,9 +360,7 @@ class _MyHomePageState extends State<MyHomePage> {
         } else{
           print("Etiqueta no compatible");
         }
-
-
-        });
+      });
     } catch (e) {
       // Manejar cualquier error
       print('Error en NFC: $e');
@@ -194,171 +368,30 @@ class _MyHomePageState extends State<MyHomePage> {
   } // writeNFC()
 
 
-
-
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-
-    const drawerHeader = UserAccountsDrawerHeader(
-      accountName: Text('User Name'),
-      accountEmail: Text('user.name@email.com'),
-      currentAccountPicture: CircleAvatar(
-        backgroundColor: Colors.white,
-        child: FlutterLogo(size: 42.0),
-      ),
-      otherAccountsPictures: <Widget>[
-        CircleAvatar(
-          backgroundColor: Colors.yellow,
-          child: Text('A'),
-        ),
-        CircleAvatar(
-          backgroundColor: Colors.red,
-          child: Text('B'),
-        )
-      ],
-    );
-
-    final drawerItems = ListView(
-      children: <Widget>[
-        drawerHeader,
-        ListTile(
-          title: const Text('Read NFC'),
-          onTap: () => Navigator.of(context).push(_NewPage(1, "Read NFC", initNFC, _resultado = "Pulsar para leer", "The URI is: ", Icon(Icons.tap_and_play))),
-        ),
-        ListTile(
-          title: const Text('Write NFC'),
-          onTap: () => Navigator.of(context).push(_NewPage(2, "Write NFC", _mostrarCuadroTexto, _resultado = "Pulsar para escribir", "Write an URL: ", Icon(Icons.save_as))),
-        ),
-        ListTile(
-          title: const Text('other drawer item'),
-          onTap: () {},
-        ),
-      ],
-    );
-
     return Scaffold(
       appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        backgroundColor: Colors.blueAccent,
-        title: Text(widget.title),
+        title: Text('Write NFC'),
       ),
       body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
         child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const Text(
-              'Write an URI: ',
-            ),
-            Text(
-              '$_resultado',
+            Text('$_resultado',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _mostrarCuadroTexto,
-        tooltip: 'Write tag',
+        onPressed: () => _mostrarCuadroTexto(context), // Pasa el contexto actual
+        tooltip: 'Write NFC',
         child: const Icon(Icons.save_as),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
-      drawer: Drawer(
-        child: drawerItems,
       ),
     );
   }
-}
-
-// <void> means this route returns nothing.
-class _NewPage extends MaterialPageRoute<void> {
-  final String title;
-  // final Function onPressed;
-  final VoidCallback onPressed;
-  final String resultado;
-  final String subtitulo;
-  final Icon icono;
-
-  _NewPage(int id, this.title, this.onPressed, this.resultado, this.subtitulo, this.icono)
-      : super(
-          builder: (BuildContext context) {
-
-              return Scaffold(
-                appBar: AppBar(
-                  // Here we take the value from the MyHomePage object that was created by
-                  // the App.build method, and use it to set our appbar title.
-                  backgroundColor: Colors.blueAccent,
-                  title: Text(title),
-                ),
-                body: Center(
-                  // Center is a layout widget. It takes a single child and positions it
-                  // in the middle of the parent.
-                  child: Column(
-                    // Column is also a layout widget. It takes a list of children and
-                    // arranges them vertically. By default, it sizes itself to fit its
-                    // children horizontally, and tries to be as tall as its parent.
-                    //
-                    // Invoke "debug painting" (press "p" in the console, choose the
-                    // "Toggle Debug Paint" action from the Flutter Inspector in Android
-                    // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-                    // to see the wireframe for each widget.
-                    //
-                    // Column has various properties to control how it sizes itself and
-                    // how it positions its children. Here we use mainAxisAlignment to
-                    // center the children vertically; the main axis here is the vertical
-                    // axis because Columns are vertical (the cross axis would be
-                    // horizontal).
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      Text(
-                        subtitulo
-                      ),
-                      Text(
-                        resultado,
-                        style: Theme
-                            .of(context)
-                            .textTheme
-                            .headlineMedium,
-                      ),
-                    ],
-                  ),
-                ),
-                floatingActionButton: FloatingActionButton(
-                  // onPressed: () => onPressed,
-                  onPressed: onPressed,
-                  tooltip: 'Write tag',
-                  child: icono,
-                ), // This trailing comma makes auto-formatting nicer for build methods.
-                // drawer: Drawer(
-                //   child: drawerItems,
-                // ),
-              );
-            }
-        );  // _NewPage
-}
-
-
+} // _NewPage2State
 
 
 
