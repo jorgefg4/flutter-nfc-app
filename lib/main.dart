@@ -1,9 +1,15 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 // import 'dart:js';
 import 'package:flutter/material.dart';
+import 'package:flutter_sharing_intent/flutter_sharing_intent.dart';
+import 'package:flutter_sharing_intent/model/sharing_file.dart';
+// import 'package:nfc_host_card_emulation/nfc_host_card_emulation.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:prueba1/model/record.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_nfc_hce/flutter_nfc_hce.dart';
 
 
 void main() {
@@ -54,12 +60,22 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  late StreamSubscription _intentDataStreamSubscription;
+  List<SharedFile>? list;
 
   @override
   void initState() {
     super.initState();
-    // setState(() {
-    // });
+
+    //////////////////
+    _intentDataStreamSubscription = FlutterSharingIntent.instance.getMediaStream().listen((List<SharedFile> value) {
+      setState(() {
+        list = value;
+      });
+      print("Shared: getMediaStream ${value.map((f) => f.value).join(",")}");
+    }, onError: (err) {
+      print("getIntentDataStream error: $err");
+    });
   }
 
 
@@ -205,6 +221,38 @@ class _NewPage1State  extends State<NewPage1> {
         // Se ha descubierto una etiqueta NFC
         print('Tag descubierta: ${tag.data}');
 
+
+        var record = tag.data['ndef']['cachedMessage']['records'][0];
+        // print('RECORD:  ' + record);
+
+        var identifier = Uint8List.fromList(record['identifier']);
+        print('IDENTIFIER:  ');
+        print(identifier);
+
+        var payload = Uint8List.fromList(record['payload']);
+        print('PAYLOAD:  ');
+        print(payload);
+
+        var type = Uint8List.fromList(record['type']);
+        print('TYPE:  ');
+        print(type);
+
+        var typeNameFormat = Uint8List.fromList([record['typeNameFormat']]);
+        print('TYPENAME:  ');
+        print(typeNameFormat);
+
+        // decoing
+        String payloadStr = Utf8Codec().decode(payload);
+        String typeStr = Utf8Codec().decode(type);
+        String typeNameFormatStr = Utf8Codec().decode(typeNameFormat);
+        // decoding value print
+        print('Payload: $payloadStr');
+        print('Type: $typeStr');
+        print('TypeNameFormat: $typeNameFormatStr');
+
+        //////////////////////
+        //lectura antigua
+        /////////////////////
         Ndef? ndef = Ndef.from(tag);
         if (ndef == null) {
           print('Tag is not compatible with NDEF or is null');
@@ -221,21 +269,22 @@ class _NewPage1State  extends State<NewPage1> {
 
           if (mensaje.typeNameFormat == NdefTypeNameFormat.nfcWellknown) {
             final _mensaje = Record.fromNdef(mensaje);
-
-            //si el mensaje es una URI
-            if (_mensaje is WellknownUriRecord) {
+            print(_mensaje);
+            if (_mensaje is WellknownTextRecord) {
               //uso setState para que se actualice el texto en la interfaz
               setState(() {
-                _resultado = _mensaje.uri.toString() + " Abriendo navegador...";
+                _resultado =
+                    _mensaje.text.toString() + " Abriendo navegador...";
               });
 
               // esperar 1 segundo antes de abrir el navegador
               await Future.delayed(Duration(milliseconds: 1000));
 
+              Uri url = Uri.parse(_mensaje.text.toString());
               //lanzo el navegador predeterminado del movil con la url
-              if (await canLaunchUrl(_mensaje.uri)) {
+              if (await canLaunchUrl(url)) {
                 await launchUrl(
-                  _mensaje.uri,
+                  url,
                   mode: LaunchMode.externalApplication,
                 );
                 return;
@@ -251,6 +300,17 @@ class _NewPage1State  extends State<NewPage1> {
       print('Error en NFC: $e');
     }
   } // initNFC()
+
+
+
+  // Función para decodificar una lista de enteros en un string original
+  String decodeIntegerListToString(List<int> encodedList) {
+    String decodedString = '';
+    for (int codeUnit in encodedList) {
+      decodedString += String.fromCharCode(codeUnit);
+    }
+    return decodedString;
+  }
 
 
   @override
@@ -292,7 +352,7 @@ class NewPage2 extends StatefulWidget {
 
 class _NewPage2State  extends State<NewPage2> {
   String _resultado = "Pulsar para escribir";
-  String? _urlToWrite;
+  String _urlToWrite = "";
 
   void _mostrarCuadroTexto(BuildContext context) {
     showDialog(
@@ -342,30 +402,118 @@ class _NewPage2State  extends State<NewPage2> {
         _resultado = "Acerca tu teléfono a otro para compartir la URL";
       });
 
-      await NfcManager.instance.startSession(onDiscovered: (NfcTag tag) async {
-        // Se ha descubierto una etiqueta NFC
-        print('Tag descubierta: ${tag.data}');
-        final ndef = Ndef.from(tag);
+      // await NfcManager.instance.startSession(onDiscovered: (NfcTag tag) async {
+      //   // Se ha descubierto una etiqueta NFC
+      //   print('Tag descubierta: ${tag.data}');
+      //   final ndef = Ndef.from(tag);
+      //
+      //   if (ndef != null) {
+      //     final message = NdefMessage([
+      //       NdefRecord.createUri(Uri.parse('$_urlToWrite')),
+      //     ]);
+      //     await ndef.write(message);  //escribo la url en la tag
+      //
+      //     print("URL escrita en la etiqueta NFC: $_urlToWrite");
+      //     setState(() {
+      //       _resultado = "URL transmitida con éxito!";
+      //     });
+      //   } else{
+      //     print("Etiqueta no compatible");
+      //   }
+      // });
 
-        if (ndef != null) {
-          final message = NdefMessage([
-            NdefRecord.createUri(Uri.parse('$_urlToWrite')),
-          ]);
-          await ndef.write(message);  //escribo la url en la tag
 
-          print("URL escrita en la etiqueta NFC: $_urlToWrite");
-          setState(() {
-            _resultado = "URL transmitida con éxito!";
-          });
-        } else{
-          print("Etiqueta no compatible");
-        }
-      });
+
+      // final nfcState = await NfcHce.checkDeviceNfcState();  // Check if your device supports NFC and if the NFC-module is enabled
+      //
+      // if (nfcState == NfcState.enabled){
+      //   await NfcHce.init(
+      //     // AID that match at least one aid-filter in apduservice.xml.
+      //     // In my case it is A000DADADADADA.
+      //     aid: Uint8List.fromList([0xA0, 0x00, 0xDA, 0xDA, 0xDA, 0xDA, 0xDA]),
+      //
+      //     // next parameter determines whether APDU responses from the ports
+      //     // on which the connection occurred will be deleted.
+      //     // If `true`, responses will be deleted, otherwise won't.
+      //     permanentApduResponses: true,
+      //
+      //     // next parameter determines whether APDU commands received on ports
+      //     // to which there are no responses will be added to the stream.
+      //     // If `true`, command won't be added, otherwise will.
+      //     listenOnlyConfiguredPorts: false,
+      //
+      //   );
+      //   print("estoy aqui 1");
+      //
+      //   // this will be changed in the NfcHce.stream listen callback
+      //   NfcApduCommand? nfcApduCommand;
+      //
+      //   NfcHce.stream.listen((command) {
+      //     // some action here
+      //     setState(() => nfcApduCommand = command);
+      //     print("estoy aqui 2");
+      //   });
+      //
+      //   // change port here
+      //   final port = 0;
+      //   // change data to transmit here
+      //   final data = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+      //   // Codificar el string en una lista de enteros
+      //   // List<int> encodedList = encodeStringToIntegerList(_urlToWrite);
+      //
+      //   await NfcHce.addApduResponse(port, data);
+      //
+      //   print("estoy aqui 3");
+      //
+      //   if (nfcApduCommand != null)
+      //     print("You listened to the stream and received the following command on the port");
+      //
+      // }
+      // else{
+      //   print("El dispositivo no soporta NFC o el módulo NFC está deshabilitado");
+      // }
+
+
+      //plugin instance
+      final _flutterNfcHcePlugin = FlutterNfcHce();
+
+      //getPlatformVersion
+      var platformVersion = await _flutterNfcHcePlugin.getPlatformVersion();
+
+      //isNfcHceSupported
+      bool? isNfcHceSupported = await _flutterNfcHcePlugin.isNfcHceSupported();
+
+      //isSecureNfcEnabled
+      bool? isSecureNfcEnabled = await _flutterNfcHcePlugin.isSecureNfcEnabled();
+
+      //isNfcEnabled
+      bool? isNfcEnabled = await _flutterNfcHcePlugin.isNfcEnabled();
+
+      //nfc content
+      var content = _urlToWrite;
+
+      //start nfc hce
+      var result = await _flutterNfcHcePlugin.startNfcHce(_urlToWrite);
+
+
+
     } catch (e) {
       // Manejar cualquier error
       print('Error en NFC: $e');
     }
   } // writeNFC()
+
+
+  // Función para codificar un string en una lista de enteros
+  List<int> encodeStringToIntegerList(String input) {
+    List<int> encodedList = [];
+    for (int i = 0; i < input.length; i++) {
+      encodedList.add(input.codeUnitAt(i));
+    }
+    return encodedList;
+  }
+
+
 
 
   @override
@@ -392,6 +540,9 @@ class _NewPage2State  extends State<NewPage2> {
     );
   }
 } // _NewPage2State
+
+
+
 
 
 
