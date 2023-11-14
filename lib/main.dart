@@ -55,6 +55,7 @@ class MyHomePage extends StatefulWidget {
 
   final String title;
 
+
   @override
   State<MyHomePage> createState() => _MyHomePageState();
 }
@@ -67,16 +68,32 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
 
-    //////////////////
+    // For sharing images coming from outside the app while the app is in the memory
     _intentDataStreamSubscription = FlutterSharingIntent.instance.getMediaStream().listen((List<SharedFile> value) {
       setState(() {
         list = value;
+        if (value.isNotEmpty) {
+          Navigator.of(context).push(MaterialPageRoute(builder: (context) =>
+              NewPage3(urlToWrite: value.map((f) => f.value).join(","))));
+        }
       });
       print("Shared: getMediaStream ${value.map((f) => f.value).join(",")}");
     }, onError: (err) {
       print("getIntentDataStream error: $err");
     });
-  }
+
+    // For sharing images coming from outside the app while the app is closed
+    FlutterSharingIntent.instance.getInitialSharing().then((List<SharedFile> value) {
+      print("Shared: getInitialMedia ${value.map((f) => f.value).join(",")}");
+      setState(() {
+        list = value;
+        if (value.isNotEmpty) {
+          Navigator.of(context).push(MaterialPageRoute(builder: (context) =>
+              NewPage3(urlToWrite: value.map((f) => f.value).join(","))));
+        }
+      });
+    });
+  } // initState()
 
 
   @override
@@ -107,25 +124,6 @@ class _MyHomePageState extends State<MyHomePage> {
       ],
     );
 
-    // final drawerItems = ListView(
-    //   children: <Widget>[
-    //     drawerHeader,
-    //     ListTile(
-    //       title: const Text('Read NFC'),
-    //       // onTap: () => Navigator.of(context).push(_NewPage(1, "Read NFC", initNFC, _resultado = "Pulsar para leer", "The URI is: ", Icon(Icons.tap_and_play))),
-    //       onTap: () => Navigator.of(context).push(_NewPage(1, "Read NFC","The URI is: ", Icon(Icons.tap_and_play))),
-    //     ),
-    //     ListTile(
-    //       title: const Text('Write NFC'),
-    //       // onTap: () => Navigator.of(context).push(_NewPage(2, "Write NFC", _mostrarCuadroTexto, _resultado = "Pulsar para escribir", "Write an URL: ", Icon(Icons.save_as))),
-    //       onTap: () => Navigator.of(context).push(_NewPage(2, "Write NFC", "Write an URL: ", Icon(Icons.save_as))),
-    //     ),
-    //     ListTile(
-    //       title: const Text('other drawer item'),
-    //       onTap: () {},
-    //     ),
-    //   ],
-    // );
 
     final drawerItems = ListView(
       children: <Widget>[
@@ -151,7 +149,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
 
 
-
     return Scaffold(
       appBar: AppBar(
         // Here we take the value from the MyHomePage object that was created by
@@ -160,47 +157,27 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text(widget.title),
       ),
       body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
         child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             const Text(
               'Write an URI: ',
             ),
             Text(
-              // '$_resultado',
               'hola',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
           ],
         ),
       ),
-      // floatingActionButton: FloatingActionButton(
-      //   onPressed: _mostrarCuadroTexto,
-      //   tooltip: 'Write tag',
-      //   child: const Icon(Icons.save_as),
-      // ), // This trailing comma makes auto-formatting nicer for build methods.
       drawer: Drawer(
         child: drawerItems,
       ),
     );
   }
 }
+
+
 
 
 
@@ -222,33 +199,33 @@ class _NewPage1State  extends State<NewPage1> {
         print('Tag descubierta: ${tag.data}');
 
 
-        var record = tag.data['ndef']['cachedMessage']['records'][0];
-        // print('RECORD:  ' + record);
-
-        var identifier = Uint8List.fromList(record['identifier']);
-        print('IDENTIFIER:  ');
-        print(identifier);
-
-        var payload = Uint8List.fromList(record['payload']);
-        print('PAYLOAD:  ');
-        print(payload);
-
-        var type = Uint8List.fromList(record['type']);
-        print('TYPE:  ');
-        print(type);
-
-        var typeNameFormat = Uint8List.fromList([record['typeNameFormat']]);
-        print('TYPENAME:  ');
-        print(typeNameFormat);
-
-        // decoing
-        String payloadStr = Utf8Codec().decode(payload);
-        String typeStr = Utf8Codec().decode(type);
-        String typeNameFormatStr = Utf8Codec().decode(typeNameFormat);
-        // decoding value print
-        print('Payload: $payloadStr');
-        print('Type: $typeStr');
-        print('TypeNameFormat: $typeNameFormatStr');
+        // var record = tag.data['ndef']['cachedMessage']['records'][0];
+        // // print('RECORD:  ' + record);
+        //
+        // var identifier = Uint8List.fromList(record['identifier']);
+        // print('IDENTIFIER:  ');
+        // print(identifier);
+        //
+        // var payload = Uint8List.fromList(record['payload']);
+        // print('PAYLOAD:  ');
+        // print(payload);
+        //
+        // var type = Uint8List.fromList(record['type']);
+        // print('TYPE:  ');
+        // print(type);
+        //
+        // var typeNameFormat = Uint8List.fromList([record['typeNameFormat']]);
+        // print('TYPENAME:  ');
+        // print(typeNameFormat);
+        //
+        // // decoing
+        // String payloadStr = Utf8Codec().decode(payload);
+        // String typeStr = Utf8Codec().decode(type);
+        // String typeNameFormatStr = Utf8Codec().decode(typeNameFormat);
+        // // decoding value print
+        // print('Payload: $payloadStr');
+        // print('Type: $typeStr');
+        // print('TypeNameFormat: $typeNameFormatStr');
 
         //////////////////////
         //lectura antigua
@@ -354,6 +331,7 @@ class _NewPage2State  extends State<NewPage2> {
   String _resultado = "Pulsar para escribir";
   String _urlToWrite = "";
 
+
   void _mostrarCuadroTexto(BuildContext context) {
     showDialog(
       context: context,
@@ -402,78 +380,6 @@ class _NewPage2State  extends State<NewPage2> {
         _resultado = "Acerca tu teléfono a otro para compartir la URL";
       });
 
-      // await NfcManager.instance.startSession(onDiscovered: (NfcTag tag) async {
-      //   // Se ha descubierto una etiqueta NFC
-      //   print('Tag descubierta: ${tag.data}');
-      //   final ndef = Ndef.from(tag);
-      //
-      //   if (ndef != null) {
-      //     final message = NdefMessage([
-      //       NdefRecord.createUri(Uri.parse('$_urlToWrite')),
-      //     ]);
-      //     await ndef.write(message);  //escribo la url en la tag
-      //
-      //     print("URL escrita en la etiqueta NFC: $_urlToWrite");
-      //     setState(() {
-      //       _resultado = "URL transmitida con éxito!";
-      //     });
-      //   } else{
-      //     print("Etiqueta no compatible");
-      //   }
-      // });
-
-
-
-      // final nfcState = await NfcHce.checkDeviceNfcState();  // Check if your device supports NFC and if the NFC-module is enabled
-      //
-      // if (nfcState == NfcState.enabled){
-      //   await NfcHce.init(
-      //     // AID that match at least one aid-filter in apduservice.xml.
-      //     // In my case it is A000DADADADADA.
-      //     aid: Uint8List.fromList([0xA0, 0x00, 0xDA, 0xDA, 0xDA, 0xDA, 0xDA]),
-      //
-      //     // next parameter determines whether APDU responses from the ports
-      //     // on which the connection occurred will be deleted.
-      //     // If `true`, responses will be deleted, otherwise won't.
-      //     permanentApduResponses: true,
-      //
-      //     // next parameter determines whether APDU commands received on ports
-      //     // to which there are no responses will be added to the stream.
-      //     // If `true`, command won't be added, otherwise will.
-      //     listenOnlyConfiguredPorts: false,
-      //
-      //   );
-      //   print("estoy aqui 1");
-      //
-      //   // this will be changed in the NfcHce.stream listen callback
-      //   NfcApduCommand? nfcApduCommand;
-      //
-      //   NfcHce.stream.listen((command) {
-      //     // some action here
-      //     setState(() => nfcApduCommand = command);
-      //     print("estoy aqui 2");
-      //   });
-      //
-      //   // change port here
-      //   final port = 0;
-      //   // change data to transmit here
-      //   final data = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-      //   // Codificar el string en una lista de enteros
-      //   // List<int> encodedList = encodeStringToIntegerList(_urlToWrite);
-      //
-      //   await NfcHce.addApduResponse(port, data);
-      //
-      //   print("estoy aqui 3");
-      //
-      //   if (nfcApduCommand != null)
-      //     print("You listened to the stream and received the following command on the port");
-      //
-      // }
-      // else{
-      //   print("El dispositivo no soporta NFC o el módulo NFC está deshabilitado");
-      // }
-
-
       //plugin instance
       final _flutterNfcHcePlugin = FlutterNfcHce();
 
@@ -504,17 +410,6 @@ class _NewPage2State  extends State<NewPage2> {
   } // writeNFC()
 
 
-  // Función para codificar un string en una lista de enteros
-  List<int> encodeStringToIntegerList(String input) {
-    List<int> encodedList = [];
-    for (int i = 0; i < input.length; i++) {
-      encodedList.add(input.codeUnitAt(i));
-    }
-    return encodedList;
-  }
-
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -540,6 +435,87 @@ class _NewPage2State  extends State<NewPage2> {
     );
   }
 } // _NewPage2State
+
+
+
+
+
+
+
+
+
+class NewPage3 extends StatefulWidget {
+  final String urlToWrite;
+  NewPage3({required this.urlToWrite});
+
+  @override
+  _NewPage3State createState() => _NewPage3State();
+}
+
+class _NewPage3State  extends State<NewPage3> {
+  String _resultado = "Esperando para compartir...";
+
+  @override
+  void initState() {
+    super.initState();
+    writeNFC();
+  }
+
+  void writeNFC() async {
+    try {
+      setState(() {
+        _resultado = "Acerca tu teléfono a otro para compartir la URL";
+      });
+
+      //plugin instance
+      final _flutterNfcHcePlugin = FlutterNfcHce();
+
+      //getPlatformVersion
+      var platformVersion = await _flutterNfcHcePlugin.getPlatformVersion();
+
+      //isNfcHceSupported
+      bool? isNfcHceSupported = await _flutterNfcHcePlugin.isNfcHceSupported();
+
+      //isSecureNfcEnabled
+      bool? isSecureNfcEnabled = await _flutterNfcHcePlugin.isSecureNfcEnabled();
+
+      //isNfcEnabled
+      bool? isNfcEnabled = await _flutterNfcHcePlugin.isNfcEnabled();
+
+      //nfc content
+      var content = widget.urlToWrite;
+
+      //start nfc hce
+      var result = await _flutterNfcHcePlugin.startNfcHce(content);
+
+
+    } catch (e) {
+      // Manejar cualquier error
+      print('Error en NFC: $e');
+    }
+  } // writeNFC()
+
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Write NFC'),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Text('$_resultado',
+              style: Theme.of(context).textTheme.headlineMedium,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+} // _NewPage3State
 
 
 
