@@ -199,38 +199,6 @@ class _NewPage1State  extends State<NewPage1> {
         // Se ha descubierto una etiqueta NFC
         print('Tag descubierta: ${tag.data}');
 
-
-        // var record = tag.data['ndef']['cachedMessage']['records'][0];
-        // // print('RECORD:  ' + record);
-        //
-        // var identifier = Uint8List.fromList(record['identifier']);
-        // print('IDENTIFIER:  ');
-        // print(identifier);
-        //
-        // var payload = Uint8List.fromList(record['payload']);
-        // print('PAYLOAD:  ');
-        // print(payload);
-        //
-        // var type = Uint8List.fromList(record['type']);
-        // print('TYPE:  ');
-        // print(type);
-        //
-        // var typeNameFormat = Uint8List.fromList([record['typeNameFormat']]);
-        // print('TYPENAME:  ');
-        // print(typeNameFormat);
-        //
-        // // decoing
-        // String payloadStr = Utf8Codec().decode(payload);
-        // String typeStr = Utf8Codec().decode(type);
-        // String typeNameFormatStr = Utf8Codec().decode(typeNameFormat);
-        // // decoding value print
-        // print('Payload: $payloadStr');
-        // print('Type: $typeStr');
-        // print('TypeNameFormat: $typeNameFormatStr');
-
-        //////////////////////
-        //lectura antigua
-        /////////////////////
         Ndef? ndef = Ndef.from(tag);
         if (ndef == null) {
           print('Tag is not compatible with NDEF or is null');
@@ -281,16 +249,6 @@ class _NewPage1State  extends State<NewPage1> {
 
 
 
-  // Función para decodificar una lista de enteros en un string original
-  String decodeIntegerListToString(List<int> encodedList) {
-    String decodedString = '';
-    for (int codeUnit in encodedList) {
-      decodedString += String.fromCharCode(codeUnit);
-    }
-    return decodedString;
-  }
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -321,8 +279,6 @@ class _NewPage1State  extends State<NewPage1> {
 
 
 
-
-
 class NewPage2 extends StatefulWidget {
   @override
   _NewPage2State createState() => _NewPage2State();
@@ -330,98 +286,132 @@ class NewPage2 extends StatefulWidget {
 
 enum ContentType { url, contacto }
 
-class _NewPage2State  extends State<NewPage2> {
+class _NewPage2State extends State<NewPage2> {
   String _resultado = "Pulsar para escribir";
   String _urlToWrite = "";
+  String _nameToWrite = "";
+  String _phoneToWrite = "";
+  String _emailToWrite = "";
   ContentType _selectedContentType = ContentType.url;
-
 
   void _mostrarCuadroTexto(BuildContext context) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        TextEditingController _urlController = TextEditingController(text: "https://"); // Establece el valor inicial
-        String _textoIngresado = ""; // Variable para almacenar el texto ingresado
-        TextEditingController _nombreController = TextEditingController();
-        TextEditingController _telefonoController = TextEditingController();
-        TextEditingController _emailController = TextEditingController();
-
-        return AlertDialog(
-          // title: Text("Ingresar URL"),
-          title: Text("Ingresar ${_selectedContentType == ContentType.url ? 'URL' : 'Contacto'}"),
-          content: _selectedContentType == ContentType.url ?
-          TextField(
-            controller: _urlController, // Usa el TextEditingController
-            onChanged: (value) {
-              _textoIngresado = value;
-            },
-            // decoration: InputDecoration(labelText: "Texto"),
-          )
-                : Column(
-            children: [
-              TextField(
-                controller: _nombreController,
-                decoration: InputDecoration(labelText: 'Nombre'),
-              ),
-              TextField(
-                controller: _telefonoController,
-                keyboardType: TextInputType.phone,
-                decoration: InputDecoration(labelText: 'Teléfono'),
-              ),
-              TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(labelText: 'Correo electrónico'),
-              ),
-            ],
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: Text("Cancelar"),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: Text("Aceptar"),
-              onPressed: () {
-                // // Aquí puedes hacer algo con el texto ingresado, como actualizar una variable en el estado
-                // setState(() {
-                //   _urlToWrite = _textoIngresado;
-                // });
-
-                if (_selectedContentType == ContentType.url) {
-                  setState(() {
-                    _urlToWrite = _urlController.text;
-                  });
-                } else {
-                  // Aquí puedes hacer algo con la información de contacto
-                  String nombre = _nombreController.text;
-                  String telefono = _telefonoController.text;
-                  String email = _emailController.text;
-                  String informacionContacto = "Nombre: $nombre, Teléfono: $telefono, Email: $email";
-                  // Puedes almacenar o utilizar informacionContacto según tus necesidades
-                  // ...
-                }
-
-
-                //llamo al método para iniciar escritura
-                writeNFC();
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
+        return _buildContentInputDialog(context);
       },
     );
-  } // _mostrarCuadroTexto()
+  }
+
+  Widget _buildContentInputDialog(BuildContext context) {
+    return AlertDialog(
+      title: Text("Ingresar ${_selectedContentType == ContentType.url ? 'URL' : 'Contacto'}"),
+      content: _getContentInputField(),
+      actions: <Widget>[
+        TextButton(
+          child: Text("Cancelar"),
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+        ),
+        TextButton(
+          child: Text("Aceptar"),
+          onPressed: () {
+            if (_selectedContentType == ContentType.url) {
+              _writeUrl();
+            } else {
+              _writeContact();
+            }
+            Navigator.of(context).pop();
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _getContentInputField() {
+    if (_selectedContentType == ContentType.url) {
+      TextEditingController _urlController = TextEditingController(text: "https://");
+      return TextField(
+        controller: _urlController,
+        onChanged: (value) {
+          _urlToWrite = value;
+        },
+      );
+    } else {
+      TextEditingController _nombreController = TextEditingController();
+      TextEditingController _telefonoController = TextEditingController();
+      TextEditingController _emailController = TextEditingController();
+
+      return Column(
+        children: [
+          TextField(
+            controller: _nombreController,
+            decoration: InputDecoration(labelText: 'Nombre'),
+            onChanged: (value) {
+              _nameToWrite = value;
+            },
+          ),
+          TextField(
+            controller: _telefonoController,
+            keyboardType: TextInputType.phone,
+            decoration: InputDecoration(labelText: 'Teléfono'),
+            onChanged: (value) {
+              _phoneToWrite = value;
+            },
+          ),
+          TextField(
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            decoration: InputDecoration(labelText: 'Correo electrónico'),
+            onChanged: (value) {
+              _emailToWrite = value;
+            },
+          ),
+        ],
+      );
+
+    }
+  }
 
 
-    void writeNFC() async {
+
+  void _writeUrl() async {
     try {
       setState(() {
-        // _resultado = "Acerca tu teléfono a otro para compartir la URL";
-        _resultado = "Acerca tu teléfono a otro para compartir la ${_selectedContentType == ContentType.url ? 'URL' : 'información de contacto'}";
+        _resultado = "Acerca tu teléfono a otro para compartir la URL";
+      });
+
+      //plugin instance
+      final _flutterNfcHcePlugin = FlutterNfcHce();
+
+      //getPlatformVersion
+      var platformVersion = await _flutterNfcHcePlugin.getPlatformVersion();
+
+      //isNfcHceSupported
+      bool? isNfcHceSupported = await _flutterNfcHcePlugin.isNfcHceSupported();
+
+      //isSecureNfcEnabled
+      bool? isSecureNfcEnabled = await _flutterNfcHcePlugin.isSecureNfcEnabled();
+
+      //isNfcEnabled
+      bool? isNfcEnabled = await _flutterNfcHcePlugin.isNfcEnabled();
+
+      //start nfc hce
+      var result = await _flutterNfcHcePlugin.startNfcHce(_urlToWrite);
+
+    } catch (e) {
+      // Manejar cualquier error
+      print('Error en NFC: $e');
+    }
+  } // _writeUrl()
+
+
+
+  void _writeContact() async {
+    try {
+      setState(() {
+        _resultado = "Acerca tu teléfono a otro para compartir el contacto";
       });
 
       //plugin instance
@@ -440,18 +430,16 @@ class _NewPage2State  extends State<NewPage2> {
       bool? isNfcEnabled = await _flutterNfcHcePlugin.isNfcEnabled();
 
       //nfc content
-      var content = _urlToWrite;
+      var content = _nameToWrite + _phoneToWrite + _emailToWrite;
 
       //start nfc hce
-      var result = await _flutterNfcHcePlugin.startNfcHce(_urlToWrite);
-
-
+      var result = await _flutterNfcHcePlugin.startNfcHce(content);
 
     } catch (e) {
       // Manejar cualquier error
       print('Error en NFC: $e');
     }
-  } // writeNFC()
+  } // _writeContact()
 
 
 
@@ -483,25 +471,25 @@ class _NewPage2State  extends State<NewPage2> {
           ),
         ],
       ),
-
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Text('$_resultado',
+            Text(
+              '$_resultado',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _mostrarCuadroTexto(context), // Pasa el contexto actual
+        onPressed: () => _mostrarCuadroTexto(context),
         tooltip: 'Write NFC',
         child: const Icon(Icons.save_as),
       ),
     );
   }
-} // _NewPage2State
+} // NewPage2State()
 
 
 
@@ -510,7 +498,7 @@ class _NewPage2State  extends State<NewPage2> {
 
 
 
-
+// para cuando se da al botón compartir url en una app externa
 class NewPage3 extends StatefulWidget {
   final String urlToWrite;
   NewPage3({required this.urlToWrite});
