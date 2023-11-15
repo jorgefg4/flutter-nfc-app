@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 // import 'dart:js';
 import 'package:flutter/material.dart';
@@ -327,26 +328,52 @@ class NewPage2 extends StatefulWidget {
   _NewPage2State createState() => _NewPage2State();
 }
 
+enum ContentType { url, contacto }
+
 class _NewPage2State  extends State<NewPage2> {
   String _resultado = "Pulsar para escribir";
   String _urlToWrite = "";
+  ContentType _selectedContentType = ContentType.url;
 
 
   void _mostrarCuadroTexto(BuildContext context) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        TextEditingController _controller = TextEditingController(text: "https://"); // Establece el valor inicial
+        TextEditingController _urlController = TextEditingController(text: "https://"); // Establece el valor inicial
         String _textoIngresado = ""; // Variable para almacenar el texto ingresado
+        TextEditingController _nombreController = TextEditingController();
+        TextEditingController _telefonoController = TextEditingController();
+        TextEditingController _emailController = TextEditingController();
 
         return AlertDialog(
-          title: Text("Ingresar URL"),
-          content: TextField(
-            controller: _controller, // Usa el TextEditingController
+          // title: Text("Ingresar URL"),
+          title: Text("Ingresar ${_selectedContentType == ContentType.url ? 'URL' : 'Contacto'}"),
+          content: _selectedContentType == ContentType.url ?
+          TextField(
+            controller: _urlController, // Usa el TextEditingController
             onChanged: (value) {
               _textoIngresado = value;
             },
             // decoration: InputDecoration(labelText: "Texto"),
+          )
+                : Column(
+            children: [
+              TextField(
+                controller: _nombreController,
+                decoration: InputDecoration(labelText: 'Nombre'),
+              ),
+              TextField(
+                controller: _telefonoController,
+                keyboardType: TextInputType.phone,
+                decoration: InputDecoration(labelText: 'Teléfono'),
+              ),
+              TextField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(labelText: 'Correo electrónico'),
+              ),
+            ],
           ),
           actions: <Widget>[
             TextButton(
@@ -358,10 +385,26 @@ class _NewPage2State  extends State<NewPage2> {
             TextButton(
               child: Text("Aceptar"),
               onPressed: () {
-                // Aquí puedes hacer algo con el texto ingresado, como actualizar una variable en el estado
-                setState(() {
-                  _urlToWrite = _textoIngresado;
-                });
+                // // Aquí puedes hacer algo con el texto ingresado, como actualizar una variable en el estado
+                // setState(() {
+                //   _urlToWrite = _textoIngresado;
+                // });
+
+                if (_selectedContentType == ContentType.url) {
+                  setState(() {
+                    _urlToWrite = _urlController.text;
+                  });
+                } else {
+                  // Aquí puedes hacer algo con la información de contacto
+                  String nombre = _nombreController.text;
+                  String telefono = _telefonoController.text;
+                  String email = _emailController.text;
+                  String informacionContacto = "Nombre: $nombre, Teléfono: $telefono, Email: $email";
+                  // Puedes almacenar o utilizar informacionContacto según tus necesidades
+                  // ...
+                }
+
+
                 //llamo al método para iniciar escritura
                 writeNFC();
                 Navigator.of(context).pop();
@@ -377,7 +420,8 @@ class _NewPage2State  extends State<NewPage2> {
     void writeNFC() async {
     try {
       setState(() {
-        _resultado = "Acerca tu teléfono a otro para compartir la URL";
+        // _resultado = "Acerca tu teléfono a otro para compartir la URL";
+        _resultado = "Acerca tu teléfono a otro para compartir la ${_selectedContentType == ContentType.url ? 'URL' : 'información de contacto'}";
       });
 
       //plugin instance
@@ -416,7 +460,30 @@ class _NewPage2State  extends State<NewPage2> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Write NFC'),
+        actions: [
+          DropdownButton<ContentType>(
+            value: _selectedContentType,
+            onChanged: (ContentType? newValue) {
+              if (newValue != null) {
+                setState(() {
+                  _selectedContentType = newValue;
+                });
+              }
+            },
+            items: <DropdownMenuItem<ContentType>>[
+              DropdownMenuItem<ContentType>(
+                value: ContentType.url,
+                child: Text('URL'),
+              ),
+              DropdownMenuItem<ContentType>(
+                value: ContentType.contacto,
+                child: Text('Contacto'),
+              ),
+            ],
+          ),
+        ],
       ),
+
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
