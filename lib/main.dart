@@ -218,24 +218,39 @@ class _NewPage1State  extends State<NewPage1> {
             print(_mensaje);
             if (_mensaje is WellknownTextRecord) {
               //uso setState para que se actualice el texto en la interfaz
-              setState(() {
-                _resultado =
-                    _mensaje.text.toString() + " Abriendo navegador...";
-              });
+
 
               // esperar 1 segundo antes de abrir el navegador
               await Future.delayed(Duration(milliseconds: 1000));
 
-              Uri url = Uri.parse(_mensaje.text.toString());
-              //lanzo el navegador predeterminado del movil con la url
-              if (await canLaunchUrl(url)) {
-                await launchUrl(
-                  url,
-                  mode: LaunchMode.externalApplication,
-                );
-                return;
-              } else {
-                throw 'No se pudo abrir la URL';
+              String content = _mensaje.text.toString();
+
+              if (content.startsWith("URL:")) {
+                // Es una URL
+                setState(() {
+                  _resultado =
+                      _mensaje.text.toString() + " Abriendo navegador...";
+                });
+                Uri url = Uri.parse(content.substring(4));
+                //lanzo el navegador predeterminado del movil con la url
+                if (await canLaunchUrl(url)) {
+                  await launchUrl(
+                    url,
+                    mode: LaunchMode.externalApplication,
+                  );
+                  return;
+                } else {
+                  throw 'No se pudo abrir la URL';
+                }
+
+              } else if (content.startsWith("CONTACTO:")) {
+                // Es un contacto
+                print("es un CONTACTO");
+                String contactoData = content.substring(9);
+                List<String> palabras = contactoData.split("*");
+                setState(() {
+                  _resultado = "Contacto recibido:\n" + "Nombre: " + palabras[0] + "\nTeléfono: " + palabras[1] + "\nEmail: " + palabras[2];
+                });
               }
             }
           }
@@ -272,6 +287,15 @@ class _NewPage1State  extends State<NewPage1> {
       ),
     );
   }
+
+
+  @override
+  void dispose() {
+    // Detener la sesión de NFC al abandonar la página
+    NfcManager.instance.stopSession();
+    print("Detuve la sesión de NFC");
+    super.dispose();
+  }
 } // _NewPage1State
 
 
@@ -293,6 +317,8 @@ class _NewPage2State extends State<NewPage2> {
   String _phoneToWrite = "";
   String _emailToWrite = "";
   ContentType _selectedContentType = ContentType.url;
+  //plugin instance
+  final _flutterNfcHcePlugin = FlutterNfcHce();
 
   void _mostrarCuadroTexto(BuildContext context) {
     showDialog(
@@ -383,7 +409,7 @@ class _NewPage2State extends State<NewPage2> {
       });
 
       //plugin instance
-      final _flutterNfcHcePlugin = FlutterNfcHce();
+      // final _flutterNfcHcePlugin = FlutterNfcHce();
 
       //getPlatformVersion
       var platformVersion = await _flutterNfcHcePlugin.getPlatformVersion();
@@ -398,7 +424,8 @@ class _NewPage2State extends State<NewPage2> {
       bool? isNfcEnabled = await _flutterNfcHcePlugin.isNfcEnabled();
 
       //start nfc hce
-      var result = await _flutterNfcHcePlugin.startNfcHce(_urlToWrite);
+      var result = await _flutterNfcHcePlugin.startNfcHce("URL:" + _urlToWrite);
+
 
     } catch (e) {
       // Manejar cualquier error
@@ -430,7 +457,7 @@ class _NewPage2State extends State<NewPage2> {
       bool? isNfcEnabled = await _flutterNfcHcePlugin.isNfcEnabled();
 
       //nfc content
-      var content = _nameToWrite + _phoneToWrite + _emailToWrite;
+      var content = "CONTACTO:" + _nameToWrite + "*" + _phoneToWrite + "*" + _emailToWrite;
 
       //start nfc hce
       var result = await _flutterNfcHcePlugin.startNfcHce(content);
@@ -488,6 +515,15 @@ class _NewPage2State extends State<NewPage2> {
         child: const Icon(Icons.save_as),
       ),
     );
+  }
+
+
+  @override
+  void dispose() {
+    //stop nfc hce
+    _flutterNfcHcePlugin.stopNfcHce();
+    print("se ha parado el HCE");
+    super.dispose();
   }
 } // NewPage2State()
 
