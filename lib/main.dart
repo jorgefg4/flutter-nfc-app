@@ -11,6 +11,8 @@ import 'package:nfc_manager/nfc_manager.dart';
 import 'package:prueba1/model/record.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_nfc_hce/flutter_nfc_hce.dart';
+import 'package:contacts_service/contacts_service.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 
 void main() {
@@ -68,6 +70,10 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
+
+    // solicito permisos para acceder a agenda de contactos
+    Permission permission = Permission.contacts;
+    permission.request();
 
     // For sharing images coming from outside the app while the app is in the memory
     _intentDataStreamSubscription = FlutterSharingIntent.instance.getMediaStream().listen((List<SharedFile> value) {
@@ -189,6 +195,9 @@ class NewPage1 extends StatefulWidget {
 
 class _NewPage1State  extends State<NewPage1> {
   String _resultado = "Pulsar para leer";
+  bool _contactoLeido = false;
+  late List<String> palabras;
+  bool isButtonDisabled = false;
 
   void initNFC() async {
     try {
@@ -245,11 +254,11 @@ class _NewPage1State  extends State<NewPage1> {
 
               } else if (content.startsWith("CONTACTO:")) {
                 // Es un contacto
-                print("es un CONTACTO");
                 String contactoData = content.substring(9);
-                List<String> palabras = contactoData.split("*");
+                palabras = contactoData.split("*");
                 setState(() {
                   _resultado = "Contacto recibido:\n" + "Nombre: " + palabras[0] + "\nTeléfono: " + palabras[1] + "\nEmail: " + palabras[2];
+                  _contactoLeido = true;
                 });
               }
             }
@@ -264,6 +273,25 @@ class _NewPage1State  extends State<NewPage1> {
 
 
 
+  void addContact() async {
+    // Crear un nuevo contacto
+    Contact contacto = Contact(
+      givenName: palabras[0],
+      phones: [Item(label: 'teléfono', value: palabras[1])],
+      emails: [Item(label: 'email', value: palabras[2])],
+    );
+    await ContactsService.addContact(contacto);
+    setState(() { /// desactivo boton
+      isButtonDisabled = true;
+    });
+    // Mostrar un SnackBar para indicar que el contacto ha sido añadido
+    final snackBar = SnackBar(
+      content: Text('Contacto añadido con éxito'),
+    );
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -276,6 +304,18 @@ class _NewPage1State  extends State<NewPage1> {
           children: <Widget>[
             Text('$_resultado',
               style: Theme.of(context).textTheme.headlineMedium,
+            ),
+
+              SizedBox(height: 20), // Espacio entre el texto y el botón
+
+            Visibility(
+              visible: _contactoLeido && !isButtonDisabled,
+              child: ElevatedButton(
+                onPressed: () {
+                    addContact();
+                },
+                child: Text('Añadir a contactos'),
+              ),
             ),
           ],
         ),
