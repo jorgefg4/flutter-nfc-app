@@ -1,18 +1,13 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
-// import 'dart:js';
 import 'package:flutter/material.dart';
-import 'package:flutter_sharing_intent/flutter_sharing_intent.dart';
-import 'package:flutter_sharing_intent/model/sharing_file.dart';
-// import 'package:nfc_host_card_emulation/nfc_host_card_emulation.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:prueba1/model/record.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_nfc_hce/flutter_nfc_hce.dart';
 import 'package:contacts_service/contacts_service.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
 
 void main() {
@@ -64,43 +59,58 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  // late StreamSubscription _intentDataStreamSubscription;
+  // List<SharedFile>? list;
   late StreamSubscription _intentDataStreamSubscription;
-  List<SharedFile>? list;
+  late List<SharedMediaFile> _sharedFiles;
+  String? _sharedText;
 
   @override
   void initState() {
     super.initState();
 
+    bool isUrl(String value) {
+      // Expresión regular para comprobar si la cadena es una URL
+      RegExp urlRegex = RegExp(
+        r'^(http|https):\/\/([^\s]+)/?$',
+        caseSensitive: false,
+        multiLine: false,
+      );
+      return urlRegex.hasMatch(value);
+    }
+
     // solicito permisos para acceder a agenda de contactos
     Permission permission = Permission.contacts;
     permission.request();
 
-    // For sharing images coming from outside the app while the app is in the memory
-    _intentDataStreamSubscription = FlutterSharingIntent.instance.getMediaStream().listen((List<SharedFile> value) {
-      setState(() {
-        list = value;
-        if (value.isNotEmpty) {
-          Navigator.of(context).push(MaterialPageRoute(builder: (context) =>
-              NewPage3(urlToWrite: value.map((f) => f.value).join(","))));
-        }
-      });
-      print("Shared: getMediaStream ${value.map((f) => f.value).join(",")}");
-    }, onError: (err) {
-      print("getIntentDataStream error: $err");
-    });
 
-    // For sharing images coming from outside the app while the app is closed
-    FlutterSharingIntent.instance.getInitialSharing().then((List<SharedFile> value) {
-      print("Shared: getInitialMedia ${value.map((f) => f.value).join(",")}");
+    // For sharing or opening urls/text coming from outside the app while the app is in the memory
+    _intentDataStreamSubscription =
+        ReceiveSharingIntent.getTextStream().listen((String value) {
+          setState(() {
+            _sharedText = value;
+            if (value.isNotEmpty) {
+            Navigator.of(context).push(MaterialPageRoute(builder: (context) =>
+                      NewPage3(urlToWrite: _sharedText.toString())));
+            }
+            print("LA URL ES: " + _sharedText.toString());
+          });
+        }, onError: (err) {
+          print("getLinkStream error: $err");
+        });
+
+    // For sharing or opening urls/text coming from outside the app while the app is closed
+    ReceiveSharingIntent.getInitialText().then((String? value) {
       setState(() {
-        list = value;
-        if (value.isNotEmpty) {
+        if(isUrl(value.toString())){
+          _sharedText = value;
           Navigator.of(context).push(MaterialPageRoute(builder: (context) =>
-              NewPage3(urlToWrite: value.map((f) => f.value).join(","))));
+              NewPage3(urlToWrite: _sharedText.toString())));
         }
       });
     });
   } // initState()
+
 
 
   @override
@@ -448,9 +458,6 @@ class _NewPage2State extends State<NewPage2> {
         _resultado = "Acerca tu teléfono a otro para compartir la URL";
       });
 
-      //plugin instance
-      // final _flutterNfcHcePlugin = FlutterNfcHce();
-
       //getPlatformVersion
       var platformVersion = await _flutterNfcHcePlugin.getPlatformVersion();
 
@@ -480,9 +487,6 @@ class _NewPage2State extends State<NewPage2> {
       setState(() {
         _resultado = "Acerca tu teléfono a otro para compartir el contacto";
       });
-
-      //plugin instance
-      final _flutterNfcHcePlugin = FlutterNfcHce();
 
       //getPlatformVersion
       var platformVersion = await _flutterNfcHcePlugin.getPlatformVersion();
@@ -577,6 +581,7 @@ class _NewPage2State extends State<NewPage2> {
 // para cuando se da al botón compartir url en una app externa
 class NewPage3 extends StatefulWidget {
   final String urlToWrite;
+
   NewPage3({required this.urlToWrite});
 
   @override
@@ -585,6 +590,7 @@ class NewPage3 extends StatefulWidget {
 
 class _NewPage3State  extends State<NewPage3> {
   String _resultado = "Esperando para compartir...";
+  final _flutterNfcHcePlugin = FlutterNfcHce();
 
   @override
   void initState() {
@@ -597,9 +603,6 @@ class _NewPage3State  extends State<NewPage3> {
       setState(() {
         _resultado = "Acerca tu teléfono a otro para compartir la URL";
       });
-
-      //plugin instance
-      final _flutterNfcHcePlugin = FlutterNfcHce();
 
       //getPlatformVersion
       var platformVersion = await _flutterNfcHcePlugin.getPlatformVersion();
@@ -617,7 +620,7 @@ class _NewPage3State  extends State<NewPage3> {
       var content = widget.urlToWrite;
 
       //start nfc hce
-      var result = await _flutterNfcHcePlugin.startNfcHce(content);
+      var result = await _flutterNfcHcePlugin.startNfcHce("URL:" + content);
 
 
     } catch (e) {
@@ -645,6 +648,14 @@ class _NewPage3State  extends State<NewPage3> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    //stop nfc hce
+    _flutterNfcHcePlugin.stopNfcHce();
+    print("se ha parado el HCE");
+    super.dispose();
   }
 } // _NewPage3State
 
