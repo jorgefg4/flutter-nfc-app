@@ -8,6 +8,7 @@ import 'package:flutter_nfc_hce/flutter_nfc_hce.dart';
 import 'package:contacts_service/contacts_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
+import 'package:fluttercontactpicker/fluttercontactpicker.dart' as Picker;
 
 
 void main() {
@@ -34,7 +35,7 @@ class MyApp extends StatelessWidget {
         // is not restarted.
         primarySwatch: Colors.deepPurple,
       ),
-      home: const MyHomePage(title: 'Home Page'),
+      home: const MyHomePage(title: 'QuickNFC'),
     );
   }
 }
@@ -64,6 +65,7 @@ class _MyHomePageState extends State<MyHomePage> {
   late StreamSubscription _intentDataStreamSubscription;
   late List<SharedMediaFile> _sharedFiles;
   String? _sharedText;
+  Image? _contactPhoto;
 
   @override
   void initState() {
@@ -177,11 +179,8 @@ class _MyHomePageState extends State<MyHomePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const Text(
-              'Write an URI: ',
-            ),
             Text(
-              'hola',
+              'Esta es la página de bienvenida. Para acceder a la funcionalidad, use el menú.',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
           ],
@@ -361,12 +360,14 @@ class NewPage2 extends StatefulWidget {
 enum ContentType { url, contacto }
 
 class _NewPage2State extends State<NewPage2> {
-  String _resultado = "Pulsar para escribir";
+  bool isButtonDisabled = false;
+  String _resultado = "Pulsar para enviar URL";
   String _urlToWrite = "";
-  String _nameToWrite = "";
-  String _phoneToWrite = "";
+  String? _nameToWrite = "";
+  String? _phoneToWrite = "";
   String _emailToWrite = "";
   ContentType _selectedContentType = ContentType.url;
+  String? _contact;
   //plugin instance
   final _flutterNfcHcePlugin = FlutterNfcHce();
 
@@ -398,6 +399,7 @@ class _NewPage2State extends State<NewPage2> {
             } else {
               _writeContact();
             }
+
             Navigator.of(context).pop();
           },
         ),
@@ -486,6 +488,8 @@ class _NewPage2State extends State<NewPage2> {
     try {
       setState(() {
         _resultado = "Acerca tu teléfono a otro para compartir el contacto";
+        /// desactivo boton
+        isButtonDisabled = true;
       });
 
       //getPlatformVersion
@@ -501,7 +505,7 @@ class _NewPage2State extends State<NewPage2> {
       bool? isNfcEnabled = await _flutterNfcHcePlugin.isNfcEnabled();
 
       //nfc content
-      var content = "CONTACTO:" + _nameToWrite + "*" + _phoneToWrite + "*" + _emailToWrite;
+      var content = "CONTACTO:" + _nameToWrite! + "*" + _phoneToWrite! + "*" + _emailToWrite;
 
       //start nfc hce
       var result = await _flutterNfcHcePlugin.startNfcHce(content);
@@ -518,7 +522,7 @@ class _NewPage2State extends State<NewPage2> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Write NFC'),
+        title: Text('Send NFC'),
         actions: [
           DropdownButton<ContentType>(
             value: _selectedContentType,
@@ -527,12 +531,26 @@ class _NewPage2State extends State<NewPage2> {
                 setState(() {
                   _selectedContentType = newValue;
                 });
+                if (newValue == ContentType.contacto) {
+                  setState(() {
+                    _resultado = "Pulsar para enviar Contacto";
+                    isButtonDisabled = false; // activo boton
+                  });
+                } else{
+                  setState(() {
+                    _resultado = "Pulsar para enviar URL";
+                  });
+                }
               }
             },
             items: <DropdownMenuItem<ContentType>>[
               DropdownMenuItem<ContentType>(
                 value: ContentType.url,
-                child: Text('URL'),
+                child: Text('URL',
+                  // style: TextStyle(
+                  //   color: Colors.white, // Establecer el color del texto en blanco
+                  // ),
+                ),
               ),
               DropdownMenuItem<ContentType>(
                 value: ContentType.contacto,
@@ -549,6 +567,23 @@ class _NewPage2State extends State<NewPage2> {
             Text(
               '$_resultado',
               style: Theme.of(context).textTheme.headlineMedium,
+            ),
+            Visibility(
+              visible: _selectedContentType == ContentType.contacto && !isButtonDisabled,
+              child: ElevatedButton(
+                  child: const Text("Seleccionar contacto de agenda..."),
+                  onPressed: () async {
+                    final Picker.FullContact contact =
+                    (await Picker.FlutterContactPicker.pickFullContact());
+                    setState(() {
+                      _contact = contact.toString();
+                      _nameToWrite = contact.name?.nickName;
+                      _phoneToWrite = contact.phones?.first.number;
+                      print("CONTACT: " + contact.toString());
+                    });
+                    _writeContact();
+                  },
+              ),
             ),
           ],
         ),
