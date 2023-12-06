@@ -166,6 +166,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.1.7"
+  flutter_sharing_intent:
+    dependency: "direct main"
+    description:
+      name: flutter_sharing_intent
+      sha256: "6eb896e6523b735e8230eeb206fd3b9f220f11ce879c2400a90b443147036ff9"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.0"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -469,6 +477,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.4"
+  whatsapp_stickers_plus:
+    dependency: "direct main"
+    description:
+      name: whatsapp_stickers_plus
+      sha256: a1f4c717b1d164847d25b3f0e5851356bece59004cec1b3fc216f70dabe0adcf
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.1"
   xml:
     dependency: transitive
     description:

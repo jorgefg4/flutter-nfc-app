@@ -1,5 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.prueba1">
+    package="com.example.prueba1"
+    xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.NFC"/>
     <uses-feature android:name="android.hardware.nfc" android:required="false" />
     <uses-feature android:name="android.hardware.nfc.hce" android:required="false" />
@@ -9,6 +10,7 @@
     <application
     android:label="QuickNFC"
         android:name="${applicationName}"
+        tools:replace="android:name"
         android:icon="@mipmap/launcher_icon">
         <activity
             android:name=".MainActivity"
@@ -31,12 +33,18 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
 
-         Este filtro es para soportar la apertura de urls o cntactos con la app
+<!--         Este filtro es para soportar la comparticion de urls o contactos con la app-->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <!-- Para soportar la apertura de URLs con la app -->
                 <data android:mimeType="text/plain" />
+            </intent-filter>
+<!--Este es para soportar la comparticion de imagenes-->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
             </intent-filter>
 
         </activity>

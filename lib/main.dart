@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter_sharing_intent/model/sharing_file.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:prueba1/model/record.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -9,6 +12,10 @@ import 'package:contacts_service/contacts_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:fluttercontactpicker/fluttercontactpicker.dart' as Picker;
+import 'package:flutter_sharing_intent/flutter_sharing_intent.dart';
+import 'package:path/path.dart' as path;
+import 'package:whatsapp_stickers_plus/exceptions.dart';
+import 'package:whatsapp_stickers_plus/whatsapp_stickers.dart';
 
 
 void main() {
@@ -23,22 +30,15 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'NFC APP',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.deepPurple,
-      ),
+      title: 'QuickNFC',
+      theme:
+        // ThemeData(
+        // primarySwatch: Colors.deepPurple,
+        // ),
+        ThemeData(useMaterial3: true),
       home: const MyHomePage(title: 'QuickNFC'),
     );
-  }
+  } // Widget build
 }
 
 class MyHomePage extends StatefulWidget {
@@ -61,8 +61,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  // late StreamSubscription _intentDataStreamSubscription;
-  // List<SharedFile>? list;
+  List<SharedFile>? list;
   late StreamSubscription _intentDataStreamSubscription;
   late List<SharedMediaFile> _sharedFiles;
   String? _sharedText;
@@ -87,14 +86,45 @@ class _MyHomePageState extends State<MyHomePage> {
     permission.request();
 
 
+    // For sharing images coming from outside the app while the app is in the memory
+    // _intentDataStreamSubscription =
+    //     FlutterSharingIntent.instance.getMediaStream()
+    //         .listen((List<SharedFile> value) {
+    //       if (value.isNotEmpty) {
+    //         setState(() {
+    //           list = value;
+    //           Navigator.of(context).push(MaterialPageRoute(builder: (context) =>
+    //               NewPage4(imagePath: value.map((f) => f.value).join(","))));
+    //         });
+    //         print("Shared: getMediaStream ${value.map((f) => f.value).join(
+    //             ",")}");
+    //       }
+    //     }, onError: (err) {
+    //       print("getIntentDataStream error: $err");
+    //     });
+    //
+    // // For sharing images coming from outside the app while the app is closed
+    // FlutterSharingIntent.instance.getInitialSharing().then((
+    //     List<SharedFile> value) {
+    //   print("Shared: getInitialMedia ${value.map((f) => f.value).join(",")}");
+    //   if (value.isNotEmpty) {
+    //     setState(() {
+    //       list = value;
+    //       Navigator.of(context).push(MaterialPageRoute(builder: (context) =>
+    //           NewPage4(imagePath: value.map((f) => f.value).join(","))));
+    //     });
+    //   }
+    // });
+
+
     // For sharing or opening urls/text coming from outside the app while the app is in the memory
     _intentDataStreamSubscription =
         ReceiveSharingIntent.getTextStream().listen((String value) {
           setState(() {
             _sharedText = value;
             if (value.isNotEmpty) {
-            Navigator.of(context).push(MaterialPageRoute(builder: (context) =>
-                      NewPage3(urlToWrite: _sharedText.toString())));
+              Navigator.of(context).push(MaterialPageRoute(builder: (context) =>
+                  NewPage3(urlToWrite: _sharedText.toString())));
             }
             print("LA URL ES: " + _sharedText.toString());
           });
@@ -105,7 +135,7 @@ class _MyHomePageState extends State<MyHomePage> {
     // For sharing or opening urls/text coming from outside the app while the app is closed
     ReceiveSharingIntent.getInitialText().then((String? value) {
       setState(() {
-        if(isUrl(value.toString())){
+        if (isUrl(value.toString())) {
           _sharedText = value;
           Navigator.of(context).push(MaterialPageRoute(builder: (context) =>
               NewPage3(urlToWrite: _sharedText.toString())));
@@ -116,60 +146,83 @@ class _MyHomePageState extends State<MyHomePage> {
 
 
 
+
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
 
-    const drawerHeader = UserAccountsDrawerHeader(
-      accountName: Text('User Name'),
-      accountEmail: Text('user.name@email.com'),
-      currentAccountPicture: CircleAvatar(
-        backgroundColor: Colors.white,
-        child: FlutterLogo(size: 42.0),
-      ),
-      otherAccountsPictures: <Widget>[
-        CircleAvatar(
-          backgroundColor: Colors.yellow,
-          child: Text('A'),
-        ),
-        CircleAvatar(
-          backgroundColor: Colors.red,
-          child: Text('B'),
-        )
-      ],
-    );
-
-
-    final drawerItems = ListView(
-      children: <Widget>[
-        drawerHeader,
-        ListTile(
-          title: const Text('Read NFC'),
-          onTap: () {
-            Navigator.of(context).push(MaterialPageRoute(builder: (context) => NewPage1()));
-          },
-        ),
-        ListTile(
-          title: const Text('Write NFC'),
-          onTap: () {
-            Navigator.of(context).push(MaterialPageRoute(builder: (context) => NewPage2()));
-          },
-        ),
-        ListTile(
-          title: const Text('other drawer item'),
-          onTap: () {},
-        ),
-      ],
-    );
-
+    // final drawerItems = ListView(
+    // children: <Widget>[
+    // // drawerHeader,
+    // ListTile(
+    // title: const Text('Read NFC'),
+    // onTap: () {
+    // Navigator.of(context).push(MaterialPageRoute(builder: (context) => NewPage1()));
+    // },
+    // ),
+    // ListTile(
+    // title: const Text('Write NFC'),
+    // onTap: () {
+    // Navigator.of(context).push(MaterialPageRoute(builder: (context) => NewPage2()));
+    // },
+    // ),
+    // ListTile(
+    // title: const Text('other drawer item'),
+    // onTap: () {},
+    // ),
+    // ],
+    // );
 
 
     return Scaffold(
+      bottomNavigationBar: NavigationBar(
+        onDestinationSelected: (int index) {
+          setState(() {
+            switch (index) {
+              case 0:
+              // Navigate to the Home page
+                break;
+              case 1:
+                Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => NewPage1()));
+                break;
+              case 2:
+                Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => NewPage2()));
+                break;
+              case 3:
+              // Navigate to the History page
+                break;
+            }
+          });
+        },
+        // indicatorColor: Colors.amber,
+        // selectedIndex: currentPageIndex,
+        destinations: const <Widget>[
+          NavigationDestination(
+            selectedIcon: Icon(Icons.home),
+            icon: Icon(Icons.home_outlined),
+            label: 'Home',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.nfc),
+            label: 'Leer',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.messenger_sharp),
+            label: 'Enviar',
+          ),
+          NavigationDestination(
+            icon: Badge(
+              label: Text('2'),
+              child: Icon(Icons.history),
+            ),
+            label: 'Historial',
+          ),
+        ],
+      ),
+
+
+
       appBar: AppBar(
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
@@ -181,21 +234,18 @@ class _MyHomePageState extends State<MyHomePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Text(
-              'Esta es la página de bienvenida. Para acceder a la funcionalidad, use el menú.',
+              'Bienvenido a QuickNFC',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
           ],
         ),
       ),
-      drawer: Drawer(
-        child: drawerItems,
-      ),
+      // drawer: Drawer(
+      //   child: drawerItems,
+      // ),
     );
-  }
-}
-
-
-
+  } // Widget build
+} // class _MyHomeState()
 
 
 class NewPage1 extends StatefulWidget {
@@ -203,7 +253,7 @@ class NewPage1 extends StatefulWidget {
   _NewPage1State createState() => _NewPage1State();
 }
 
-class _NewPage1State  extends State<NewPage1> {
+class _NewPage1State extends State<NewPage1> {
   String _resultado = "Pulsar para leer";
   bool _contactoLeido = false;
   late List<String> palabras;
@@ -261,16 +311,60 @@ class _NewPage1State  extends State<NewPage1> {
                 } else {
                   throw 'No se pudo abrir la URL';
                 }
-
               } else if (content.startsWith("CONTACTO:")) {
                 // Es un contacto
                 String contactoData = content.substring(9);
                 palabras = contactoData.split("*");
                 setState(() {
-                  _resultado = "Contacto recibido:\n" + "Nombre: " + palabras[0] + "\nTeléfono: " + palabras[1] + "\nEmail: " + palabras[2];
+                  _resultado =
+                      "Contacto recibido:\n" + "Nombre: " + palabras[0] +
+                          "\nTeléfono: " + palabras[1] + "\nEmail: " +
+                          palabras[2];
                   _contactoLeido = true;
                 });
               }
+              // else if (content.startsWith("IMAGE:")) {
+              //   // Es un sticker
+              //   String imageBase64 = content.substring(6);
+              //   // Decodifica la cadena base64
+              //   Uint8List imageBytes = base64Decode(imageBase64);
+              //   // Escribe los bytes en un archivo de imagen
+              //   await File('/assets/sticker.webp').writeAsBytes(imageBytes);
+              //
+              //   const stickers = {
+              //     'sticker.webp': ['☕', '🙂'],
+              //     'icon.webp': ['☕', '🙂'],
+              //     'icon2.webp': ['☕', '🙂'],
+              //   };
+              //
+              //   Future installFromAssets() async {
+              //     var stickerPack = WhatsappStickers(
+              //       identifier: 'cuppyFlutterWhatsAppStickers',
+              //       name: 'Cuppy Flutter WhatsApp Stickers',
+              //       publisher: 'John Doe',
+              //       trayImageFileName: WhatsappStickerImage.fromAsset(
+              //           'assets/sticker.webp'),
+              //       publisherWebsite: '',
+              //       privacyPolicyWebsite: '',
+              //       licenseAgreementWebsite: '',
+              //     );
+              //
+              //     stickers.forEach((sticker, emojis) {
+              //       stickerPack.addSticker(
+              //           WhatsappStickerImage.fromAsset('assets/$sticker'),
+              //           emojis);
+              //     });
+              //
+              //     try {
+              //       await stickerPack.sendToWhatsApp();
+              //     } on WhatsappStickersException catch (e) {
+              //       print("ERROR AL AÑADIR EL PAQUETE DE STICKERS A WHATSAPP:");
+              //       print(e.cause);
+              //     }
+              //   }
+              //
+              //   installFromAssets();
+              // }
             }
           }
         }
@@ -282,7 +376,6 @@ class _NewPage1State  extends State<NewPage1> {
   } // initNFC()
 
 
-
   void addContact() async {
     // Crear un nuevo contacto
     Contact contacto = Contact(
@@ -291,7 +384,8 @@ class _NewPage1State  extends State<NewPage1> {
       emails: [Item(label: 'email', value: palabras[2])],
     );
     await ContactsService.addContact(contacto);
-    setState(() { /// desactivo boton
+    setState(() {
+      /// desactivo boton
       isButtonDisabled = true;
     });
     // Mostrar un SnackBar para indicar que el contacto ha sido añadido
@@ -313,16 +407,19 @@ class _NewPage1State  extends State<NewPage1> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Text('$_resultado',
-              style: Theme.of(context).textTheme.headlineMedium,
+              style: Theme
+                  .of(context)
+                  .textTheme
+                  .headlineMedium,
             ),
 
-              SizedBox(height: 20), // Espacio entre el texto y el botón
+            SizedBox(height: 20), // Espacio entre el texto y el botón
 
             Visibility(
               visible: _contactoLeido && !isButtonDisabled,
               child: ElevatedButton(
                 onPressed: () {
-                    addContact();
+                  addContact();
                 },
                 child: Text('Añadir a contactos'),
               ),
@@ -349,10 +446,6 @@ class _NewPage1State  extends State<NewPage1> {
 } // _NewPage1State
 
 
-
-
-
-
 class NewPage2 extends StatefulWidget {
   @override
   _NewPage2State createState() => _NewPage2State();
@@ -369,6 +462,7 @@ class _NewPage2State extends State<NewPage2> {
   String _emailToWrite = "";
   ContentType _selectedContentType = ContentType.url;
   String? _contact;
+
   //plugin instance
   final _flutterNfcHcePlugin = FlutterNfcHce();
 
@@ -383,7 +477,9 @@ class _NewPage2State extends State<NewPage2> {
 
   Widget _buildContentInputDialog(BuildContext context) {
     return AlertDialog(
-      title: Text("Ingresar ${_selectedContentType == ContentType.url ? 'URL' : 'Contacto'}"),
+      title: Text("Ingresar ${_selectedContentType == ContentType.url
+          ? 'URL'
+          : 'Contacto'}"),
       content: _getContentInputField(),
       actions: <Widget>[
         TextButton(
@@ -410,7 +506,8 @@ class _NewPage2State extends State<NewPage2> {
 
   Widget _getContentInputField() {
     if (_selectedContentType == ContentType.url) {
-      TextEditingController _urlController = TextEditingController(text: "https://");
+      TextEditingController _urlController = TextEditingController(
+          text: "https://");
       return TextField(
         controller: _urlController,
         onChanged: (value) {
@@ -449,10 +546,8 @@ class _NewPage2State extends State<NewPage2> {
           ),
         ],
       );
-
     }
   }
-
 
 
   void _writeUrl() async {
@@ -468,15 +563,14 @@ class _NewPage2State extends State<NewPage2> {
       bool? isNfcHceSupported = await _flutterNfcHcePlugin.isNfcHceSupported();
 
       //isSecureNfcEnabled
-      bool? isSecureNfcEnabled = await _flutterNfcHcePlugin.isSecureNfcEnabled();
+      bool? isSecureNfcEnabled = await _flutterNfcHcePlugin
+          .isSecureNfcEnabled();
 
       //isNfcEnabled
       bool? isNfcEnabled = await _flutterNfcHcePlugin.isNfcEnabled();
 
       //start nfc hce
       var result = await _flutterNfcHcePlugin.startNfcHce("URL:" + _urlToWrite);
-
-
     } catch (e) {
       // Manejar cualquier error
       print('Error en NFC: $e');
@@ -484,11 +578,11 @@ class _NewPage2State extends State<NewPage2> {
   } // _writeUrl()
 
 
-
   void _writeContact() async {
     try {
       setState(() {
         _resultado = "Acerca tu teléfono a otro para compartir el contacto";
+
         /// desactivo boton
         isButtonDisabled = true;
       });
@@ -500,23 +594,23 @@ class _NewPage2State extends State<NewPage2> {
       bool? isNfcHceSupported = await _flutterNfcHcePlugin.isNfcHceSupported();
 
       //isSecureNfcEnabled
-      bool? isSecureNfcEnabled = await _flutterNfcHcePlugin.isSecureNfcEnabled();
+      bool? isSecureNfcEnabled = await _flutterNfcHcePlugin
+          .isSecureNfcEnabled();
 
       //isNfcEnabled
       bool? isNfcEnabled = await _flutterNfcHcePlugin.isNfcEnabled();
 
       //nfc content
-      var content = "CONTACTO:" + _nameToWrite! + "*" + _phoneToWrite! + "*" + _emailToWrite;
+      var content = "CONTACTO:" + _nameToWrite! + "*" + _phoneToWrite! + "*" +
+          _emailToWrite;
 
       //start nfc hce
       var result = await _flutterNfcHcePlugin.startNfcHce(content);
-
     } catch (e) {
       // Manejar cualquier error
       print('Error en NFC: $e');
     }
   } // _writeContact()
-
 
 
   @override
@@ -537,7 +631,7 @@ class _NewPage2State extends State<NewPage2> {
                     _resultado = "Pulsar para enviar Contacto";
                     isButtonDisabled = false; // activo boton
                   });
-                } else{
+                } else {
                   setState(() {
                     _resultado = "Pulsar para enviar URL";
                   });
@@ -567,23 +661,27 @@ class _NewPage2State extends State<NewPage2> {
           children: <Widget>[
             Text(
               '$_resultado',
-              style: Theme.of(context).textTheme.headlineMedium,
+              style: Theme
+                  .of(context)
+                  .textTheme
+                  .headlineMedium,
             ),
             Visibility(
-              visible: _selectedContentType == ContentType.contacto && !isButtonDisabled,
+              visible: _selectedContentType == ContentType.contacto &&
+                  !isButtonDisabled,
               child: ElevatedButton(
-                  child: const Text("Seleccionar contacto de agenda..."),
-                  onPressed: () async {
-                    final Picker.FullContact contact =
-                    (await Picker.FlutterContactPicker.pickFullContact());
-                    setState(() {
-                      _contact = contact.toString();
-                      _nameToWrite = contact.name?.nickName;
-                      _phoneToWrite = contact.phones?.first.number;
-                      print("CONTACT: " + contact.toString());
-                    });
-                    _writeContact();
-                  },
+                child: const Text("Seleccionar contacto de agenda..."),
+                onPressed: () async {
+                  final Picker.FullContact contact =
+                  (await Picker.FlutterContactPicker.pickFullContact());
+                  setState(() {
+                    _contact = contact.toString();
+                    _nameToWrite = contact.name?.nickName;
+                    _phoneToWrite = contact.phones?.first.number;
+                    print("CONTACT: " + contact.toString());
+                  });
+                  _writeContact();
+                },
               ),
             ),
           ],
@@ -608,12 +706,6 @@ class _NewPage2State extends State<NewPage2> {
 } // NewPage2State()
 
 
-
-
-
-
-
-
 // para cuando se da al botón compartir url en una app externa
 class NewPage3 extends StatefulWidget {
   final String urlToWrite;
@@ -624,7 +716,7 @@ class NewPage3 extends StatefulWidget {
   _NewPage3State createState() => _NewPage3State();
 }
 
-class _NewPage3State  extends State<NewPage3> {
+class _NewPage3State extends State<NewPage3> {
   String _resultado = "Esperando para compartir...";
   final _flutterNfcHcePlugin = FlutterNfcHce();
 
@@ -647,7 +739,8 @@ class _NewPage3State  extends State<NewPage3> {
       bool? isNfcHceSupported = await _flutterNfcHcePlugin.isNfcHceSupported();
 
       //isSecureNfcEnabled
-      bool? isSecureNfcEnabled = await _flutterNfcHcePlugin.isSecureNfcEnabled();
+      bool? isSecureNfcEnabled = await _flutterNfcHcePlugin
+          .isSecureNfcEnabled();
 
       //isNfcEnabled
       bool? isNfcEnabled = await _flutterNfcHcePlugin.isNfcEnabled();
@@ -657,14 +750,11 @@ class _NewPage3State  extends State<NewPage3> {
 
       //start nfc hce
       var result = await _flutterNfcHcePlugin.startNfcHce("URL:" + content);
-
-
     } catch (e) {
       // Manejar cualquier error
       print('Error en NFC: $e');
     }
   } // writeNFC()
-
 
 
   @override
@@ -678,7 +768,10 @@ class _NewPage3State  extends State<NewPage3> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Text('$_resultado',
-              style: Theme.of(context).textTheme.headlineMedium,
+              style: Theme
+                  .of(context)
+                  .textTheme
+                  .headlineMedium,
             ),
           ],
         ),
@@ -694,6 +787,115 @@ class _NewPage3State  extends State<NewPage3> {
     super.dispose();
   }
 } // _NewPage3State
+
+
+// para cuando se da al botón compartir imagen en una app externa
+// class NewPage4 extends StatefulWidget {
+//   final String imagePath;
+//
+//   NewPage4({required this.imagePath});
+//
+//   @override
+//   _NewPage4State createState() => _NewPage4State();
+// }
+//
+// class _NewPage4State extends State<NewPage4> {
+//   String _resultado = "Esperando para compartir...";
+//   final _flutterNfcHcePlugin = FlutterNfcHce();
+//
+//   @override
+//   void initState() {
+//     super.initState();
+//     writeNFC();
+//   }
+//
+//   Future<String> imageToBase64(String imagePath) async {
+//     // Lee el archivo de imagen como bytes
+//     File imageFile = File(imagePath);
+//     List<int> imageBytes = await imageFile.readAsBytes();
+//
+//     // Convierte los bytes en una cadena codificada en base64
+//     String base64String = base64Encode(imageBytes);
+//
+//     return base64String;
+//   }
+//
+//   void writeNFC() async {
+//     try {
+//       setState(() {
+//         _resultado = "Acerca tu teléfono a otro para compartir la imagen";
+//       });
+//
+//       //getPlatformVersion
+//       var platformVersion = await _flutterNfcHcePlugin.getPlatformVersion();
+//
+//       //isNfcHceSupported
+//       bool? isNfcHceSupported = await _flutterNfcHcePlugin.isNfcHceSupported();
+//
+//       //isSecureNfcEnabled
+//       bool? isSecureNfcEnabled = await _flutterNfcHcePlugin
+//           .isSecureNfcEnabled();
+//
+//       //isNfcEnabled
+//       bool? isNfcEnabled = await _flutterNfcHcePlugin.isNfcEnabled();
+//
+//       String extension = path.extension(widget.imagePath);
+//       if (extension.toLowerCase() == ".webp") {
+//         try {
+//           String base64String = await imageToBase64(widget.imagePath);
+//           print('Imagen convertida a base64: $base64String');
+//           int size = base64String.codeUnits.length * 2;
+//           print("EL TAMAÑO ES: " + size.toString());
+//
+//           //start nfc hce
+//           var result = await _flutterNfcHcePlugin.startNfcHce(
+//               "IMAGE:" + base64String);
+//         } catch (e) {
+//           print('Error al convertir la imagen: $e');
+//         }
+//       } else {
+//         setState(() {
+//           _resultado =
+//           'El formato de imagen seleccionado no es compatible. Pruebe con formatos ".webp"';
+//         });
+//       }
+//     } catch (e) {
+//       // Manejar cualquier error
+//       print('Error en NFC: $e');
+//     }
+//   } // writeNFC()
+//
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: AppBar(
+//         title: Text('Write NFC'),
+//       ),
+//       body: Center(
+//         child: Column(
+//           mainAxisAlignment: MainAxisAlignment.center,
+//           children: <Widget>[
+//             Text('$_resultado',
+//               style: Theme
+//                   .of(context)
+//                   .textTheme
+//                   .headlineMedium,
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+//
+//   @override
+//   void dispose() {
+//     //stop nfc hce
+//     _flutterNfcHcePlugin.stopNfcHce();
+//     print("se ha parado el HCE");
+//     super.dispose();
+//   }
+// } // _NewPage4State
 
 
 
