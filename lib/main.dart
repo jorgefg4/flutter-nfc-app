@@ -62,10 +62,9 @@ class _MyHomePageState extends State<MyHomePage> {
   int currentPageIndex = 0;
   IconData currentIcon = Icons.tap_and_play;
   Function()? currentFunction;
-  String _resultado = "Pulsar para leer";
-  bool _contactoLeido = false;
+  String _resultado = "Pulsar";
   late List<String> palabras;
-  bool isButtonDisabled = false;
+  bool isButtonDisabled = true;
   String _urlToWrite = "";
   String? _nameToWrite = "";
   String? _phoneToWrite = "";
@@ -75,6 +74,8 @@ class _MyHomePageState extends State<MyHomePage> {
   String? _contact;
   //plugin instance
   final _flutterNfcHcePlugin = FlutterNfcHce();
+  TextEditingController _urlController = TextEditingController(text: "https://");
+  bool _startNFC = false;
 
 
   void _mostrarCuadroTexto() {
@@ -327,17 +328,18 @@ class _MyHomePageState extends State<MyHomePage> {
               print(_mensaje);
               if (_mensaje is WellknownTextRecord) {
 
-                // esperar 1 segundo antes de abrir el navegador
-                await Future.delayed(Duration(milliseconds: 1000));
-
                 String content = _mensaje.text.toString();
 
                 if (content.startsWith("URL:")) {
                   // Es una URL
                   setState(() {
                     _resultado =
-                        _mensaje.text.toString() + " Abriendo navegador...";
+                        content.substring(4) + "\nAbriendo navegador...";
                   });
+
+                  // esperar 1 segundo antes de abrir el navegador
+                  await Future.delayed(Duration(milliseconds: 2000));
+
                   Uri url = Uri.parse(content.substring(4));
                   //lanzo el navegador predeterminado del movil con la url
                   if (await canLaunchUrl(url)) {
@@ -345,6 +347,10 @@ class _MyHomePageState extends State<MyHomePage> {
                       url,
                       mode: LaunchMode.externalApplication,
                     );
+                    setState(() {
+                      _resultado =
+                          content.substring(4);
+                    });
                     return;
                   } else {
                     throw 'No se pudo abrir la URL';
@@ -355,10 +361,10 @@ class _MyHomePageState extends State<MyHomePage> {
                   palabras = contactoData.split("*");
                   setState(() {
                     _resultado =
-                        "Contacto recibido:\n" + "Nombre: " + palabras[0] +
+                        "---- Contacto recibido ----\n" + "Nombre: " + palabras[0] +
                             "\nTeléfono: " + palabras[1] + "\nEmail: " +
                             palabras[2];
-                    _contactoLeido = true;
+                    isButtonDisabled = false;
                   });
                 }
               }
@@ -392,6 +398,8 @@ class _MyHomePageState extends State<MyHomePage> {
     } // addContact()
 
 
+
+
     return Scaffold(
       bottomNavigationBar: NavigationBar(
         onDestinationSelected: (int index) {
@@ -402,6 +410,9 @@ class _MyHomePageState extends State<MyHomePage> {
                 currentIcon = Icons.tap_and_play;
                 setState(() {
                   currentFunction = initNFC;
+                  selectedButton = false;
+                  _startNFC = false;
+                  isButtonDisabled = true;
                 });
 
                 break;
@@ -410,6 +421,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 currentIcon = Icons.send;
                 setState(() {
                   currentFunction = _mostrarCuadroTexto;
+                  selectedButton = false;
                 });
 
                 break;
@@ -472,156 +484,227 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
 
 
-      body: <Widget>[
-        /// Read page
-        Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Text("Pulsar para leer",
-                style: Theme
-                    .of(context)
-                    .textTheme
-                    .headlineMedium,
-              ),
+      body:
+      Container(
+        color: Colors.deepPurpleAccent,
+        child: <Widget>[
 
-              SizedBox(height: 20), // Espacio entre el texto y el botón
-
-              Visibility(
-                visible: _contactoLeido && !isButtonDisabled,
-                child: ElevatedButton(
-                  onPressed: () {
-                    addContact();
-                  },
-                  child: Text('Añadir a contactos'),
-                ),
-              ),
-            ],
-          ),
-        ),
-
-
-
-        /// Send page
-        //     DropdownButton<ContentType>(
-        //       value: _selectedContentType,
-        //       onChanged: (ContentType? newValue) {
-        //         if (newValue != null) {
-        //           setState(() {
-        //             _selectedContentType = newValue;
-        //           });
-        //           if (newValue == ContentType.contacto) {
-        //             setState(() {
-        //               _resultado = "Pulsar para enviar Contacto";
-        //               isButtonDisabled = false; // activo boton
-        //             });
-        //           } else {
-        //             setState(() {
-        //               _resultado = "Pulsar para enviar URL";
-        //             });
-        //           }
-        //         }
-        //       },
-        //       items: <DropdownMenuItem<ContentType>>[
-        //         DropdownMenuItem<ContentType>(
-        //           value: ContentType.url,
-        //           child: Text('URL',
-        //             // style: TextStyle(
-        //             //   color: Colors.white, // Establecer el color del texto en blanco
-        //             // ),
-        //           ),
-        //         ),
-        //         DropdownMenuItem<ContentType>(
-        //           value: ContentType.contacto,
-        //           child: Text('Contacto'),
-        //         ),
-        //       ],
-        //     ),
-
-        Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-          Visibility(
-            visible: !selectedButton,
-                child: Column(
+          /// Read page
+            Center(
+              child:
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
-                    Card(
-                      child: ListTile(
-                        leading: Icon(Icons.web),
-                        title: Text('URL'),
-                        subtitle: Text('Envía una página web'),
-                        onTap: () {
-                          setState(() {
-                            _selectedContentType = ContentType.url;
-                            selectedButton = true;
-                          });
-                        },
+                    Visibility(
+                      visible: !_startNFC,
+                      child: Text(
+                      "Lectura NFC",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18.0,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    Card(
-                      child: ListTile(
-                        leading: Icon(Icons.contacts),
-                        title: Text('Contacto de agenda'),
-                        subtitle: Text('Envía un contacto nuevo o existente'),
-                        onTap: () {
-                          setState(() {
-                          _selectedContentType = ContentType.contacto;
-                          selectedButton = true;
-                          });
-                          },
+                    ),
+
+                    SizedBox(height: 10),
+
+                    Visibility(
+                      visible: !_startNFC,
+                      child: ElevatedButton(
+                      onPressed: () {
+                        initNFC();
+                        setState(() {
+                          _startNFC = true;
+                        });
+
+                        },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30.0), // Ajusta el radio según sea necesario
+                        ),
+                      ),
+                      child: Text(
+                        "Pulsar para leer",
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 15.0, // Ajusta el tamaño del texto según sea necesario
+                        ),
+                      ),
+                    ),
+                    ),
+
+                    Visibility(
+                      visible: _startNFC,
+                      child:
+                        Text('$_resultado',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20.0,
+                          ),
+                        ),
+                    ),
+
+                    SizedBox(height: 20),
+
+                    Visibility(
+                      visible: _startNFC,
+                      child:
+                      Icon(Icons.tap_and_play,
+                      color: Colors.white,
+                      size: 50,),
+                    ),
+
+                    SizedBox(height: 20), // Espacio entre el texto y el botón
+
+                    Visibility(
+                      visible: !isButtonDisabled,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          addContact();
+                        },
+                        child: Text('Añadir a contactos'),
                       ),
                     ),
                   ],
                 ),
-          ),
-              Visibility(
-                visible: _selectedContentType == ContentType.contacto &&
-                    !isButtonDisabled,
-                child: ElevatedButton(
-                  child: const Text("Seleccionar contacto de agenda..."),
-                  onPressed: () async {
-                    final Picker.FullContact contact =
-                    (await Picker.FlutterContactPicker.pickFullContact());
-                    setState(() {
-                      _contact = contact.toString();
-                      _nameToWrite = contact.name?.nickName;
-                      _phoneToWrite = contact.phones?.first.number;
-                      print("CONTACT: " + contact.toString());
-                    });
-                    _writeContact();
-                  },
-                ),
-              ),
-            ],
-          ),
-        ),
+            ),
 
 
-        /// Historial page
-        Padding(
-          padding: EdgeInsets.all(8.0),
-          child: Column(
-            children: <Widget>[
-              Card(
-                child: ListTile(
-                  leading: Icon(Icons.notifications_sharp),
-                  title: Text('Notification 1'),
-                  subtitle: Text('This is a notification'),
-                ),
-              ),
-              Card(
-                child: ListTile(
-                  leading: Icon(Icons.notifications_sharp),
-                  title: Text('Notification 2'),
-                  subtitle: Text('This is a notification'),
-                ),
-              ),
-            ],
-          ),
-        ),
+          /// Send page
+          //     DropdownButton<ContentType>(
+          //       value: _selectedContentType,
+          //       onChanged: (ContentType? newValue) {
+          //         if (newValue != null) {
+          //           setState(() {
+          //             _selectedContentType = newValue;
+          //           });
+          //           if (newValue == ContentType.contacto) {
+          //             setState(() {
+          //               _resultado = "Pulsar para enviar Contacto";
+          //               isButtonDisabled = false; // activo boton
+          //             });
+          //           } else {
+          //             setState(() {
+          //               _resultado = "Pulsar para enviar URL";
+          //             });
+          //           }
+          //         }
+          //       },
+          //       items: <DropdownMenuItem<ContentType>>[
+          //         DropdownMenuItem<ContentType>(
+          //           value: ContentType.url,
+          //           child: Text('URL',
+          //             // style: TextStyle(
+          //             //   color: Colors.white, // Establecer el color del texto en blanco
+          //             // ),
+          //           ),
+          //         ),
+          //         DropdownMenuItem<ContentType>(
+          //           value: ContentType.contacto,
+          //           child: Text('Contacto'),
+          //         ),
+          //       ],
+          //     ),
 
-      ][currentPageIndex],
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Visibility(
+                  visible: !selectedButton,
+                  child: Column(
+                    children: <Widget>[
+                      Card(
+                        child: ListTile(
+                          leading: Icon(Icons.web),
+                          title: Text('URL'),
+                          subtitle: Text('Envía una página web'),
+                          onTap: () {
+                            setState(() {
+                              _selectedContentType = ContentType.url;
+                              selectedButton = true;
+                            });
+                          },
+                        ),
+                      ),
+                      Card(
+                        child: ListTile(
+                          leading: Icon(Icons.contacts),
+                          title: Text('Contacto de agenda'),
+                          subtitle: Text('Envía un contacto nuevo o existente'),
+                          onTap: () {
+                            setState(() {
+                              _selectedContentType = ContentType.contacto;
+                              selectedButton = true;
+                            });
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Visibility(
+                  visible: _selectedContentType == ContentType.contacto &&
+                      selectedButton,
+                  child: ElevatedButton(
+                    child: const Text("Seleccionar contacto de agenda..."),
+                    onPressed: () async {
+                      final Picker.FullContact contact =
+                      (await Picker.FlutterContactPicker.pickFullContact());
+                      setState(() {
+                        _contact = contact.toString();
+                        _nameToWrite = contact.name?.nickName;
+                        _phoneToWrite = contact.phones?.first.number;
+                        print("CONTACT: " + contact.toString());
+                      });
+                      _writeContact();
+                    },
+                  ),
+                ),
+                Visibility(
+                  visible: _selectedContentType == ContentType.url &&
+                      selectedButton,
+                  child: TextField(
+                    controller: _urlController,
+                    onChanged: (value) {
+                      _urlToWrite = value;
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+
+          /// Historial page
+          Padding(
+            padding: EdgeInsets.all(8.0),
+            child: Column(
+              children: <Widget>[
+                Card(
+                  child: ListTile(
+                    leading: Icon(Icons.notifications_sharp),
+                    title: Text('Notification 1'),
+                    subtitle: Text('This is a notification'),
+                  ),
+                ),
+                Card(
+                  child: ListTile(
+                    leading: Icon(Icons.notifications_sharp),
+                    title: Text('Notification 2'),
+                    subtitle: Text('This is a notification'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+        ][currentPageIndex],
+      ),
+
 
       // drawer: Drawer(
       //   child: drawerItems,
