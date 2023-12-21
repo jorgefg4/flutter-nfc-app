@@ -23,9 +23,6 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'QuickNFC',
       theme:
-      // ThemeData(
-      // primarySwatch: Colors.deepPurple,
-      // ),
       ThemeData(useMaterial3: true),
       home: const MyHomePage(title: 'QuickNFC'),
     );
@@ -81,7 +78,7 @@ class _MyHomePageState extends State<MyHomePage> {
             _sharedText = value;
             if (value.isNotEmpty) {
               Navigator.of(context).push(MaterialPageRoute(builder: (context) =>
-                  NewPage3(urlToWrite: _sharedText.toString())));
+                  SendUrlPage(urlToSend: _sharedText.toString())));
             }
             print("LA URL ES: " + _sharedText.toString());
           });
@@ -95,7 +92,7 @@ class _MyHomePageState extends State<MyHomePage> {
         if (isUrl(value.toString())) {
           _sharedText = value;
           Navigator.of(context).push(MaterialPageRoute(builder: (context) =>
-              NewPage3(urlToWrite: _sharedText.toString())));
+              SendUrlPage(urlToSend: _sharedText.toString())));
         }
       });
     });
@@ -720,7 +717,6 @@ class _SendPageState extends State<SendPage> {
     NfcManager.instance.stopSession();
     super.dispose();
   }
-
 } // class _SendPageState
 
 
@@ -729,89 +725,90 @@ class _SendPageState extends State<SendPage> {
 
 
 
+//Página para ENVIAR URL desde app externa
+class SendUrlPage extends StatefulWidget {
 
-
-
-
-
-// para cuando se da al botón compartir url en una app externa
-class NewPage3 extends StatefulWidget {
-  final String urlToWrite;
-
-  NewPage3({required this.urlToWrite});
+  final String urlToSend;
+  SendUrlPage({required this.urlToSend});
 
   @override
-  _NewPage3State createState() => _NewPage3State();
+  _SendUrlPageState createState() => _SendUrlPageState();
 }
 
-class _NewPage3State extends State<NewPage3> {
-  String _resultado = "Esperando para compartir...";
-  final _flutterNfcHcePlugin = FlutterNfcHce();
+class _SendUrlPageState extends State<SendUrlPage> {
+
+  Function()? currentFunction;
+  String resultado = "";
+
+  //inicializo el manejador
+  NfcHandler nfcHandler = NfcHandler();
 
   @override
   void initState() {
     super.initState();
-    writeNFC();
+    writeUrl();
   }
 
-  void writeNFC() async {
-    try {
-      setState(() {
-        _resultado = "Acerca tu teléfono a otro para compartir la URL";
-      });
-
-      //getPlatformVersion
-      var platformVersion = await _flutterNfcHcePlugin.getPlatformVersion();
-
-      //isNfcHceSupported
-      bool? isNfcHceSupported = await _flutterNfcHcePlugin.isNfcHceSupported();
-
-      //isSecureNfcEnabled
-      bool? isSecureNfcEnabled = await _flutterNfcHcePlugin
-          .isSecureNfcEnabled();
-
-      //isNfcEnabled
-      bool? isNfcEnabled = await _flutterNfcHcePlugin.isNfcEnabled();
-
-      //nfc content
-      var content = widget.urlToWrite;
-
-      //start nfc hce
-      var result = await _flutterNfcHcePlugin.startNfcHce("URL:" + content);
-    } catch (e) {
-      // Manejar cualquier error
-      print('Error en NFC: $e');
-    }
-  } // writeNFC()
+  void writeUrl() async {
+    setState(() {
+      resultado = "Acerca tu teléfono a otro para compartir la URL";
+    });
+    nfcHandler.writeUrl(widget.urlToSend);
+  }
 
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Write NFC'),
+        backgroundColor: Colors.deepPurpleAccent,
+        title: Text('QuickNFC',
+          style: TextStyle(
+            color: Colors.white,
+          ),
+        ),
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text('$_resultado',
-              style: Theme
-                  .of(context)
-                  .textTheme
-                  .headlineMedium,
-            ),
+
+      body:
+        Container(
+        color: Colors.deepPurpleAccent,
+        child:
+
+        Center(
+          child: Stack(
+              children: <Widget>[
+
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+
+                    Text('$resultado',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20.0,
+                    ),
+                  ),
+
+                    SizedBox(height: 20),
+
+                    Icon(Icons.tap_and_play,
+                      color: Colors.white,
+                      size: 50,
+                    ),
+              ]
+          ),
           ],
         ),
+      ),
       ),
     );
   }
 
   @override
   void dispose() {
-    //stop nfc hce
-    _flutterNfcHcePlugin.stopNfcHce();
-    print("se ha parado el HCE");
+    // NfcManager.instance.stopSession();
     super.dispose();
   }
-} // _NewPage3State
+
+} // class _SendUrlPageState
