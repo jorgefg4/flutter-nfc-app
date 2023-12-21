@@ -7,8 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_nfc_hce/flutter_nfc_hce.dart';
 import 'package:flutter_sharing_intent/model/sharing_file.dart';
 import 'package:nfc_manager/nfc_manager.dart';
-import 'package:receive_sharing_intent/receive_sharing_intent.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'model/record.dart';
 
 
@@ -20,13 +18,11 @@ class NfcHandler {
   TextEditingController _urlController = TextEditingController(text: "https://");
 
 
-
   // constructor
   NfcHandler({
     this.list,
     this.currentIcon = Icons.tap_and_play,
   });
-
 
 
 
