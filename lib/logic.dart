@@ -119,6 +119,7 @@ class NfcHandler {
         }
         completer.complete(resultado);
       });
+
     } catch (e) {
       // Manejar cualquier error
       print('Error en NFC: $e');
