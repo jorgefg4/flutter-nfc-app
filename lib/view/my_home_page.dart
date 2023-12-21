@@ -9,6 +9,7 @@ import 'package:nfc_manager/nfc_manager.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../logic.dart';
 import '../model/record.dart';
 import 'package:fluttercontactpicker/fluttercontactpicker.dart' as Picker;
 
@@ -45,16 +46,15 @@ class MyHomePage extends StatefulWidget {
 enum ContentType { url, contacto }
 
 class _MyHomePageState extends State<MyHomePage> {
-  List<SharedFile>? list;
+  // List<SharedFile>? list;
   late StreamSubscription _intentDataStreamSubscription;
-  late List<SharedMediaFile> _sharedFiles;
+  // late List<SharedMediaFile> _sharedFiles;
   String? _sharedText;
-  Image? _contactPhoto;
   int currentPageIndex = 0;
   IconData currentIcon = Icons.tap_and_play;
   Function()? currentFunction;
   String _resultado = "Pulsar";
-  late List<String> palabras;
+  // late List<String> palabras;
   bool isButtonDisabled = true;
   String _urlToWrite = "";
   String? _nameToWrite = "";
@@ -65,198 +65,10 @@ class _MyHomePageState extends State<MyHomePage> {
   bool selectedButton2 = false;
   bool selectedButton3 = false;
   String? _contact;
-  final _flutterNfcHcePlugin = FlutterNfcHce(); //plugin instance
   TextEditingController _urlController = TextEditingController(text: "https://");
   bool _startNFC = false;
 
 
-  void _writeUrl() async {
-    try {
-      setState(() {
-        _resultado = "Acerca tu teléfono a otro para compartir la URL";
-        selectedButton2 = false;
-      });
-
-      //getPlatformVersion
-      var platformVersion = await _flutterNfcHcePlugin.getPlatformVersion();
-
-      //isNfcHceSupported
-      bool? isNfcHceSupported = await _flutterNfcHcePlugin.isNfcHceSupported();
-
-      //isSecureNfcEnabled
-      bool? isSecureNfcEnabled = await _flutterNfcHcePlugin
-          .isSecureNfcEnabled();
-
-      //isNfcEnabled
-      bool? isNfcEnabled = await _flutterNfcHcePlugin.isNfcEnabled();
-
-      //start nfc hce
-      var result = await _flutterNfcHcePlugin.startNfcHce("URL:" + _urlToWrite);
-    } catch (e) {
-      // Manejar cualquier error
-      print('Error en NFC: $e');
-    }
-  } // _writeUrl()
-
-
-  void _writeContact() async {
-    try {
-      setState(() {
-        _resultado = "Acerca tu teléfono a otro para compartir el contacto";
-        selectedButton2 = false;
-
-        /// desactivo boton
-        isButtonDisabled = true;
-      });
-
-      //getPlatformVersion
-      var platformVersion = await _flutterNfcHcePlugin.getPlatformVersion();
-
-      //isNfcHceSupported
-      bool? isNfcHceSupported = await _flutterNfcHcePlugin.isNfcHceSupported();
-
-      //isSecureNfcEnabled
-      bool? isSecureNfcEnabled = await _flutterNfcHcePlugin
-          .isSecureNfcEnabled();
-
-      //isNfcEnabled
-      bool? isNfcEnabled = await _flutterNfcHcePlugin.isNfcEnabled();
-
-      //nfc content
-      var content = "CONTACTO:" + _nameToWrite! + "*" + _phoneToWrite! + "*" +
-          _emailToWrite;
-
-      //start nfc hce
-      var result = await _flutterNfcHcePlugin.startNfcHce(content);
-
-    } catch (e) {
-      // Manejar cualquier error
-      print('Error en NFC: $e');
-    }
-  } // _writeContact()
-
-
-  void initNFC() async {
-    try {
-      setState(() {
-        _resultado = "Esperando lectura...";
-      });
-      await NfcManager.instance.startSession(onDiscovered: (NfcTag tag) async {
-        // Se ha descubierto una etiqueta NFC
-        print('Tag descubierta: ${tag.data}');
-
-        Ndef? ndef = Ndef.from(tag);
-        if (ndef == null) {
-          print('Tag is not compatible with NDEF or is null');
-          return;
-        } else {
-          print('Tag is compatible with NDEF');
-
-          NdefMessage? data = await ndef.read();
-          List<NdefRecord> lista = data.records;
-          NdefRecord mensaje = lista.first;
-
-          NdefTypeNameFormat tipo = mensaje.typeNameFormat;
-          print("El tipo de mensaje leido es: " + tipo.name);
-
-          if (mensaje.typeNameFormat == NdefTypeNameFormat.nfcWellknown) {
-            final _mensaje = Record.fromNdef(mensaje);
-            print(_mensaje);
-            if (_mensaje is WellknownTextRecord) {
-
-              String content = _mensaje.text.toString();
-
-              if (content.startsWith("URL:")) {
-                // Es una URL
-                setState(() {
-                  _resultado =
-                      content.substring(4) + "\nAbriendo navegador...";
-                });
-
-                // esperar 1 segundo antes de abrir el navegador
-                await Future.delayed(Duration(milliseconds: 2000));
-
-                Uri url = Uri.parse(content.substring(4));
-                //lanzo el navegador predeterminado del movil con la url
-                if (await canLaunchUrl(url)) {
-                  await launchUrl(
-                    url,
-                    mode: LaunchMode.externalApplication,
-                  );
-                  setState(() {
-                    _resultado =
-                        content.substring(4);
-                  });
-                  return;
-                } else {
-                  throw 'No se pudo abrir la URL';
-                }
-              } else if (content.startsWith("CONTACTO:")) {
-                // Es un contacto
-                String contactoData = content.substring(9);
-                palabras = contactoData.split("*");
-                setState(() {
-                  _resultado =
-                      "---- Contacto recibido ----\n" + "Nombre: " + palabras[0] +
-                          "\nTeléfono: " + palabras[1] + "\nEmail: " +
-                          palabras[2];
-                  isButtonDisabled = false;
-                });
-              }
-            }
-          }
-        }
-      });
-    } catch (e) {
-      // Manejar cualquier error
-      print('Error en NFC: $e');
-    }
-  } // initNFC()
-
-
-  void addContact() async {
-    // Crear un nuevo contacto
-    Contact contacto = Contact(
-      givenName: palabras[0],
-      phones: [Item(label: 'teléfono', value: palabras[1])],
-      emails: [Item(label: 'email', value: palabras[2])],
-    );
-    await ContactsService.addContact(contacto);
-    setState(() {
-      /// desactivo boton
-      isButtonDisabled = true;
-    });
-    // Mostrar un SnackBar para indicar que el contacto ha sido añadido
-    final snackBar = SnackBar(
-      content: Text('Contacto añadido con éxito'),
-    );
-    ScaffoldMessenger.of(context).showSnackBar(snackBar);
-  } // addContact()
-
-
-
-  // Función para mostrar la ventana emergente de ayuda
-  void _showHelpDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Ayuda'),
-          content: Text(
-            'Aquí puedes proporcionar información de ayuda.',
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('Cerrar'),
-            ),
-          ],
-        );
-      },
-    );
-  }
 
 
   @override
@@ -307,6 +119,71 @@ class _MyHomePageState extends State<MyHomePage> {
 
 
 
+// //inicializo el manejador
+//   NfcHandler nfcHandler = NfcHandler();
+//
+//   void initNFC() async {
+//     setState(() {
+//       _resultado = "Esperando lectura...";
+//     });
+//     String result = await nfcHandler.initNFC();
+//     setState(() {
+//       _resultado = result;
+//     });
+//   }
+//   void writeUrl() async {
+//     setState(() {
+//       _resultado = "Acerca tu teléfono a otro para compartir la URL";
+//       selectedButton2 = false;
+//     });
+//     nfcHandler.writeUrl(_urlToWrite);
+//   }
+//   void writeContact() async {
+//     setState(() {
+//       _resultado = "Acerca tu teléfono a otro para compartir el contacto";
+//       selectedButton2 = false;
+//       /// desactivo boton
+//       isButtonDisabled = true;
+//     });
+//     nfcHandler.writeContact();
+//   }
+//   void addContact() async {
+//     setState(() {
+//       /// desactivo boton
+//       isButtonDisabled = true;
+//     });
+//     nfcHandler.addContact();
+//     final snackBar = SnackBar(
+//       content: Text('Contacto añadido con éxito'),
+//     );
+//     ScaffoldMessenger.of(context).showSnackBar(snackBar);
+//   }
+
+  // Función para mostrar la ventana emergente de ayuda
+  void showHelpDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Ayuda'),
+          content: Text(
+            'Aquí puedes proporcionar información de ayuda.',
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Cerrar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -317,10 +194,10 @@ class _MyHomePageState extends State<MyHomePage> {
           setState(() {
             switch (index) {
               case 0:
-                currentPageIndex = index;
                 currentIcon = Icons.tap_and_play;
                 setState(() {
-                  currentFunction = initNFC;
+                  currentPageIndex = index;
+                  // currentFunction = initNFC;
                   selectedButton = false;
                   selectedButton2 = false;
                   _startNFC = false;
@@ -329,17 +206,19 @@ class _MyHomePageState extends State<MyHomePage> {
 
                 break;
               case 1:
-                currentPageIndex = index;
                 currentIcon = Icons.send;
                 setState(() {
-                  currentFunction = _writeUrl;
+                  currentPageIndex = index;
+                  // currentFunction = writeUrl;
                   selectedButton = true;
                   selectedButton2 = false;
                 });
 
                 break;
               case 2:
-                currentPageIndex = index;
+                setState(() {
+                  currentPageIndex = index;
+                });
 
                 break;
             }
@@ -366,14 +245,14 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
 
 
-      floatingActionButton:
-      Visibility(
-        visible: selectedButton2,
-        child: FloatingActionButton(
-          onPressed: currentFunction,
-          child: Icon(currentIcon),
-        ),
-      ),
+      // floatingActionButton:
+      // Visibility(
+      //   visible: selectedButton2,
+      //   child: FloatingActionButton(
+      //     onPressed: currentFunction,
+      //     child: Icon(currentIcon),
+      //   ),
+      // ),
 
 
       appBar: AppBar(
@@ -390,7 +269,7 @@ class _MyHomePageState extends State<MyHomePage> {
               color: Colors.white,
             ),
             onPressed: () {
-              _showHelpDialog();
+              showHelpDialog();
             },
           ),
         ],
@@ -398,315 +277,326 @@ class _MyHomePageState extends State<MyHomePage> {
 
 
       body:
-      Container(
-        color: Colors.deepPurpleAccent,
-        child: <Widget>[
-
-          /// Read page
-          Center(
-            child:
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Visibility(
-                  visible: !_startNFC,
-                  child: Text(
-                    "Lectura NFC",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18.0,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-
-                SizedBox(height: 10),
-
-                Visibility(
-                  visible: !_startNFC,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      initNFC();
-                      setState(() {
-                        _startNFC = true;
-                      });
-
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30.0), // Ajusta el radio según sea necesario
-                      ),
-                    ),
-                    child: Text(
-                      "Pulsar para leer",
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 15.0, // Ajusta el tamaño del texto según sea necesario
-                      ),
-                    ),
-                  ),
-                ),
-
-                Visibility(
-                  visible: _startNFC,
-                  child:
-                  Text('$_resultado',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20.0,
-                    ),
-                  ),
-                ),
-
-                SizedBox(height: 20),
-
-                Visibility(
-                  visible: _startNFC,
-                  child:
-                  Icon(Icons.tap_and_play,
-                    color: Colors.white,
-                    size: 50,),
-                ),
-
-                SizedBox(height: 20), // Espacio entre el texto y el botón
-
-                Visibility(
-                  visible: !isButtonDisabled,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      addContact();
-                    },
-                    child: Text('Añadir a contactos'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-
-
-          /// Send page
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Visibility(
-                  visible: selectedButton,
-                  child: Column(
-                    children: <Widget>[
-                      Card(
-                        child: ListTile(
-                          leading: Icon(Icons.web),
-                          title: Text('URL'),
-                          subtitle: Text('Envía una página web'),
-                          onTap: () {
-                            setState(() {
-                              _selectedContentType = ContentType.url;
-                              selectedButton = false; // botones URL, contacto...
-                              selectedButton2 = true; //boton flotante
-                              selectedButton3 = false; // enviar contacto
-                            });
-                          },
-                        ),
-                      ),
-                      Card(
-                        child: ListTile(
-                          leading: Icon(Icons.contacts),
-                          title: Text('Contacto de agenda'),
-                          subtitle: Text('Envía un contacto nuevo o existente'),
-                          onTap: () {
-                            setState(() {
-                              _selectedContentType = ContentType.contacto;
-                              selectedButton = false; // botones URL, contacto...
-                              selectedButton2 = true; //boton flotante
-                              selectedButton3 = true; // enviar contacto
-                              currentFunction = _writeContact;
-                            });
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-
-                Visibility(
-                  visible: selectedButton2 && selectedButton3,
-                  child:
-                  Container(
-                    width: 300.0,
-                    decoration: BoxDecoration(
-                      color: Colors.white, // Fondo blanco del Container
-                      borderRadius: BorderRadius.circular(10.0), // Borde redondeado, ajusta según sea necesario
-                    ),
-                    child:
-                    TextField(
-                      onChanged: (value) {
-                        setState(() {
-                          _nameToWrite = value;
-                        });
-                      },
-                      decoration: InputDecoration(
-                        contentPadding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0), // Ajusta el espacio interno según sea necesario
-                        hintText: 'Nombre',
-                        border: InputBorder.none, // Elimina el borde del TextField
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(height: 10),
-                Visibility(
-                  visible: selectedButton2 && selectedButton3,
-                  child:
-                  Container(
-                    width: 300.0,
-                    decoration: BoxDecoration(
-                      color: Colors.white, // Fondo blanco del Container
-                      borderRadius: BorderRadius.circular(10.0), // Borde redondeado, ajusta según sea necesario
-                    ),
-                    child:
-                    TextField(
-                      keyboardType: TextInputType.phone,
-                      onChanged: (value) {
-                        setState(() {
-                          _phoneToWrite = value;
-                        });
-                      },
-                      decoration: InputDecoration(
-                        contentPadding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0), // Ajusta el espacio interno según sea necesario
-                        hintText: 'Teléfono',
-                        border: InputBorder.none, // Elimina el borde del TextField
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(height: 10),
-                Visibility(
-                  visible: selectedButton2 && selectedButton3,
-                  child:
-                  Container(
-                    width: 300.0,
-                    decoration: BoxDecoration(
-                      color: Colors.white, // Fondo blanco del Container
-                      borderRadius: BorderRadius.circular(10.0), // Borde redondeado, ajusta según sea necesario
-                    ),
-                    child:
-                    TextField(
-                      keyboardType: TextInputType.emailAddress,
-                      onChanged: (value) {
-                        setState(() {
-                          _emailToWrite = value;
-                        });
-                      },
-                      decoration: InputDecoration(
-                        contentPadding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0), // Ajusta el espacio interno según sea necesario
-                        hintText: 'Email',
-                        border: InputBorder.none, // Elimina el borde del TextField
-                      ),
-                    ),
-                  ),
-                ),
-
-                SizedBox(height: 20),
-
-                Visibility(
-                  visible: _selectedContentType == ContentType.contacto &&
-                      !selectedButton && selectedButton2,
-                  child: ElevatedButton(
-                    child: const Text("Seleccionar contacto de agenda..."),
-                    onPressed: () async {
-                      final Picker.FullContact contact =
-                      (await Picker.FlutterContactPicker.pickFullContact());
-                      setState(() {
-                        _contact = contact.toString();
-                        _nameToWrite = contact.name?.nickName;
-                        _phoneToWrite = contact.phones?.first.number;
-                        print("CONTACT: " + contact.toString());
-                      });
-                      _writeContact();
-                    },
-                  ),
-                ),
-
-                Visibility(
-                  visible: !selectedButton2 && !selectedButton,
-                  child:
-                  Text('$_resultado',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20.0,
-                    ),
-                  ),
-                ),
-
-                SizedBox(height: 20),
-
-                Visibility(
-                  visible: !selectedButton2 && !selectedButton,
-                  child:
-                  Icon(Icons.tap_and_play,
-                    color: Colors.white,
-                    size: 50,),
-                ),
-
-                Visibility(
-                  visible: selectedButton2 && !selectedButton3,
-                  child:
-                  Container(
-                    width: 300.0,
-                    decoration: BoxDecoration(
-                      color: Colors.white, // Fondo blanco del Container
-                      borderRadius: BorderRadius.circular(10.0), // Borde redondeado, ajusta según sea necesario
-                    ),
-                    child:
-                    TextField(
-                      controller: _urlController,
-                      onChanged: (value) {
-                        setState(() {
-                          _urlToWrite = value;
-                        });
-                      },
-                      decoration: InputDecoration(
-                        contentPadding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0), // Ajusta el espacio interno según sea necesario
-                        hintText: 'Ingrese la URL',
-                        border: InputBorder.none, // Elimina el borde del TextField
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-
-          /// Historial page
-          Padding(
-            padding: EdgeInsets.all(8.0),
-            child: Column(
-              children: <Widget>[
-                Card(
-                  child: ListTile(
-                    leading: Icon(Icons.notifications_sharp),
-                    title: Text('Notification 1'),
-                    subtitle: Text('This is a notification'),
-                  ),
-                ),
-                Card(
-                  child: ListTile(
-                    leading: Icon(Icons.notifications_sharp),
-                    title: Text('Notification 2'),
-                    subtitle: Text('This is a notification'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-        ][currentPageIndex],
+      IndexedStack(
+        index: currentPageIndex,
+        children: [
+          ReadPage(key: UniqueKey()),
+          SendPage(key: UniqueKey()),
+        ],
       ),
+
+      // Container(
+      //   color: Colors.deepPurpleAccent,
+      //   child: <Widget>[
+      //
+      //     /// Read page
+      //     Center(
+      //       child:
+      //       Column(
+      //         mainAxisAlignment: MainAxisAlignment.center,
+      //         children: <Widget>[
+      //           Visibility(
+      //             visible: !_startNFC,
+      //             child: Text(
+      //               "Lectura NFC",
+      //               style: TextStyle(
+      //                 color: Colors.white,
+      //                 fontSize: 18.0,
+      //                 fontWeight: FontWeight.bold,
+      //               ),
+      //             ),
+      //           ),
+      //
+      //           SizedBox(height: 10),
+      //
+      //           Visibility(
+      //             visible: !_startNFC,
+      //             child: ElevatedButton(
+      //               onPressed: () {
+      //                 initNFC();
+      //                 setState(() {
+      //                   _startNFC = true;
+      //                 });
+      //
+      //               },
+      //               style: ElevatedButton.styleFrom(
+      //                 backgroundColor: Colors.white,
+      //                 shape: RoundedRectangleBorder(
+      //                   borderRadius: BorderRadius.circular(30.0), // Ajusta el radio según sea necesario
+      //                 ),
+      //               ),
+      //               child: Text(
+      //                 "Pulsar para leer",
+      //                 style: TextStyle(
+      //                   color: Colors.black,
+      //                   fontSize: 15.0, // Ajusta el tamaño del texto según sea necesario
+      //                 ),
+      //               ),
+      //             ),
+      //           ),
+      //
+      //           Visibility(
+      //             visible: _startNFC,
+      //             child:
+      //             Text('$_resultado',
+      //               textAlign: TextAlign.center,
+      //               style: TextStyle(
+      //                 color: Colors.white,
+      //                 fontSize: 20.0,
+      //               ),
+      //             ),
+      //           ),
+      //
+      //           SizedBox(height: 20),
+      //
+      //           Visibility(
+      //             visible: _startNFC,
+      //             child:
+      //             Icon(Icons.tap_and_play,
+      //               color: Colors.white,
+      //               size: 50,),
+      //           ),
+      //
+      //           SizedBox(height: 20), // Espacio entre el texto y el botón
+      //
+      //           Visibility(
+      //             visible: !isButtonDisabled,
+      //             child: ElevatedButton(
+      //               onPressed: () {
+      //                 // addContact();
+      //                 nfcHandler.addContact();
+      //               },
+      //               child: Text('Añadir a contactos'),
+      //             ),
+      //           ),
+      //         ],
+      //       ),
+      //     ),
+      //
+      //
+      //
+      //     /// Send page
+      //     Center(
+      //       child: Column(
+      //         mainAxisAlignment: MainAxisAlignment.center,
+      //         children: <Widget>[
+      //           Visibility(
+      //             visible: selectedButton,
+      //             child: Column(
+      //               children: <Widget>[
+      //                 Card(
+      //                   child: ListTile(
+      //                     leading: Icon(Icons.web),
+      //                     title: Text('URL'),
+      //                     subtitle: Text('Envía una página web'),
+      //                     onTap: () {
+      //                       setState(() {
+      //                         _selectedContentType = ContentType.url;
+      //                         selectedButton = false; // botones URL, contacto...
+      //                         selectedButton2 = true; //boton flotante
+      //                         selectedButton3 = false; // enviar contacto
+      //                       });
+      //                     },
+      //                   ),
+      //                 ),
+      //                 Card(
+      //                   child: ListTile(
+      //                     leading: Icon(Icons.contacts),
+      //                     title: Text('Contacto de agenda'),
+      //                     subtitle: Text('Envía un contacto nuevo o existente'),
+      //                     onTap: () {
+      //                       setState(() {
+      //                         _selectedContentType = ContentType.contacto;
+      //                         selectedButton = false; // botones URL, contacto...
+      //                         selectedButton2 = true; //boton flotante
+      //                         selectedButton3 = true; // enviar contacto
+      //                         // currentFunction = _writeContact;
+      //                         currentFunction = nfcHandler.writeContact;
+      //                       });
+      //                     },
+      //                   ),
+      //                 ),
+      //               ],
+      //             ),
+      //           ),
+      //
+      //
+      //           Visibility(
+      //             visible: selectedButton2 && selectedButton3,
+      //             child:
+      //             Container(
+      //               width: 300.0,
+      //               decoration: BoxDecoration(
+      //                 color: Colors.white, // Fondo blanco del Container
+      //                 borderRadius: BorderRadius.circular(10.0), // Borde redondeado, ajusta según sea necesario
+      //               ),
+      //               child:
+      //               TextField(
+      //                 onChanged: (value) {
+      //                   setState(() {
+      //                     _nameToWrite = value;
+      //                   });
+      //                 },
+      //                 decoration: InputDecoration(
+      //                   contentPadding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0), // Ajusta el espacio interno según sea necesario
+      //                   hintText: 'Nombre',
+      //                   border: InputBorder.none, // Elimina el borde del TextField
+      //                 ),
+      //               ),
+      //             ),
+      //           ),
+      //           SizedBox(height: 10),
+      //           Visibility(
+      //             visible: selectedButton2 && selectedButton3,
+      //             child:
+      //             Container(
+      //               width: 300.0,
+      //               decoration: BoxDecoration(
+      //                 color: Colors.white, // Fondo blanco del Container
+      //                 borderRadius: BorderRadius.circular(10.0), // Borde redondeado, ajusta según sea necesario
+      //               ),
+      //               child:
+      //               TextField(
+      //                 keyboardType: TextInputType.phone,
+      //                 onChanged: (value) {
+      //                   setState(() {
+      //                     _phoneToWrite = value;
+      //                   });
+      //                 },
+      //                 decoration: InputDecoration(
+      //                   contentPadding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0), // Ajusta el espacio interno según sea necesario
+      //                   hintText: 'Teléfono',
+      //                   border: InputBorder.none, // Elimina el borde del TextField
+      //                 ),
+      //               ),
+      //             ),
+      //           ),
+      //           SizedBox(height: 10),
+      //           Visibility(
+      //             visible: selectedButton2 && selectedButton3,
+      //             child:
+      //             Container(
+      //               width: 300.0,
+      //               decoration: BoxDecoration(
+      //                 color: Colors.white, // Fondo blanco del Container
+      //                 borderRadius: BorderRadius.circular(10.0), // Borde redondeado, ajusta según sea necesario
+      //               ),
+      //               child:
+      //               TextField(
+      //                 keyboardType: TextInputType.emailAddress,
+      //                 onChanged: (value) {
+      //                   setState(() {
+      //                     _emailToWrite = value;
+      //                   });
+      //                 },
+      //                 decoration: InputDecoration(
+      //                   contentPadding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0), // Ajusta el espacio interno según sea necesario
+      //                   hintText: 'Email',
+      //                   border: InputBorder.none, // Elimina el borde del TextField
+      //                 ),
+      //               ),
+      //             ),
+      //           ),
+      //
+      //           SizedBox(height: 20),
+      //
+      //           Visibility(
+      //             visible: _selectedContentType == ContentType.contacto &&
+      //                 !selectedButton && selectedButton2,
+      //             child: ElevatedButton(
+      //               child: const Text("Seleccionar contacto de agenda..."),
+      //               onPressed: () async {
+      //                 final Picker.FullContact contact =
+      //                 (await Picker.FlutterContactPicker.pickFullContact());
+      //                 setState(() {
+      //                   _contact = contact.toString();
+      //                   _nameToWrite = contact.name?.nickName;
+      //                   _phoneToWrite = contact.phones?.first.number;
+      //                   print("CONTACT: " + contact.toString());
+      //                 });
+      //                 // _writeContact();
+      //                 nfcHandler.writeContact();
+      //               },
+      //             ),
+      //           ),
+      //
+      //           Visibility(
+      //             visible: !selectedButton2 && !selectedButton,
+      //             child:
+      //             Text('$_resultado',
+      //               textAlign: TextAlign.center,
+      //               style: TextStyle(
+      //                 color: Colors.white,
+      //                 fontSize: 20.0,
+      //               ),
+      //             ),
+      //           ),
+      //
+      //           SizedBox(height: 20),
+      //
+      //           Visibility(
+      //             visible: !selectedButton2 && !selectedButton,
+      //             child:
+      //             Icon(Icons.tap_and_play,
+      //               color: Colors.white,
+      //               size: 50,),
+      //           ),
+      //
+      //           Visibility(
+      //             visible: selectedButton2 && !selectedButton3,
+      //             child:
+      //             Container(
+      //               width: 300.0,
+      //               decoration: BoxDecoration(
+      //                 color: Colors.white, // Fondo blanco del Container
+      //                 borderRadius: BorderRadius.circular(10.0), // Borde redondeado, ajusta según sea necesario
+      //               ),
+      //               child:
+      //               TextField(
+      //                 controller: _urlController,
+      //                 onChanged: (value) {
+      //                   setState(() {
+      //                     _urlToWrite = value;
+      //                   });
+      //                 },
+      //                 decoration: InputDecoration(
+      //                   contentPadding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0), // Ajusta el espacio interno según sea necesario
+      //                   hintText: 'Ingrese la URL',
+      //                   border: InputBorder.none, // Elimina el borde del TextField
+      //                 ),
+      //               ),
+      //             ),
+      //           ),
+      //         ],
+      //       ),
+      //     ),
+      //
+      //
+      //     /// Historial page
+      //     Padding(
+      //       padding: EdgeInsets.all(8.0),
+      //       child: Column(
+      //         children: <Widget>[
+      //           Card(
+      //             child: ListTile(
+      //               leading: Icon(Icons.notifications_sharp),
+      //               title: Text('Notification 1'),
+      //               subtitle: Text('This is a notification'),
+      //             ),
+      //           ),
+      //           Card(
+      //             child: ListTile(
+      //               leading: Icon(Icons.notifications_sharp),
+      //               title: Text('Notification 2'),
+      //               subtitle: Text('This is a notification'),
+      //             ),
+      //           ),
+      //         ],
+      //       ),
+      //     ),
+      //
+      //   ][currentPageIndex],
+      // ),
 
       // drawer: Drawer(
       //   child: drawerItems,
@@ -714,6 +604,472 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   } // Widget build
 } // class _MyHomeState()
+
+
+
+
+
+
+//Página para LECTURA
+class ReadPage extends StatefulWidget {
+  const ReadPage({Key? key}) : super(key: key);
+
+  @override
+  _ReadPageState createState() => _ReadPageState();
+}
+
+class _ReadPageState extends State<ReadPage> {
+
+  final GlobalKey<_ReadPageState> _readPageKey = GlobalKey<_ReadPageState>();
+
+  String? _sharedText;
+  int currentPageIndex = 0;
+  IconData currentIcon = Icons.tap_and_play;
+  Function()? currentFunction;
+  String resultado = "Pulsar";
+  late List<String> palabras;
+  bool isButtonDisabled = true;
+  String _urlToWrite = "";
+  String? _nameToWrite = "";
+  String? _phoneToWrite = "";
+  String _emailToWrite = "";
+  ContentType _selectedContentType = ContentType.contacto;
+  bool selectedButton = false;
+  bool selectedButton2 = false;
+  bool selectedButton3 = false;
+  String? _contact;
+  bool startNFC = false;
+
+//inicializo el manejador
+  NfcHandler nfcHandler = NfcHandler();
+
+
+  void initNFC() async {
+    String result = await nfcHandler.initNFC();
+    if (result.startsWith("URL:")) {
+      // Es una URL
+      setState(() {
+        resultado = result.substring(4) + "\nAbriendo navegador...";
+      });
+      // esperar 1 segundo antes de abrir el navegador
+      await Future.delayed(Duration(milliseconds: 2000));
+
+      Uri url = Uri.parse(result.substring(4));
+      //lanzo el navegador predeterminado del movil con la url
+      if (await canLaunchUrl(url)) {
+        await launchUrl(
+          url,
+          mode: LaunchMode.externalApplication,
+        );
+      } else {
+        throw 'No se pudo abrir la URL';
+      }
+      setState(() {
+        resultado = result.substring(4);
+      });
+    } else if (result.startsWith("CONTACTO:")) {
+        // Es un contacto
+        String contactoData = result.substring(9);
+        palabras = contactoData.split("*");
+        resultado = "---- Contacto recibido ----\n" + "Nombre: " + palabras[0] + "\nTeléfono: " + palabras[1] + "\nEmail: " + palabras[2];
+        isButtonDisabled = false;
+        setState(() {
+          resultado;
+        });
+      }
+  } // initNFC()
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.deepPurpleAccent,
+      child:
+
+        /// Read page
+        Center(
+          child:
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Visibility(
+                visible: !startNFC,
+                child: Text(
+                  "Lectura NFC",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18.0,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+
+              SizedBox(height: 10),
+
+              Visibility(
+                visible: !startNFC,
+                child: ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      startNFC = true;
+                      resultado = "Esperando lectura...";
+                    });
+                    initNFC();
+
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30.0), // Ajusta el radio según sea necesario
+                    ),
+                  ),
+                  child: Text(
+                    "Pulsar para leer",
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 15.0, // Ajusta el tamaño del texto según sea necesario
+                    ),
+                  ),
+                ),
+              ),
+
+              Visibility(
+                visible: startNFC,
+                child:
+                Text('$resultado',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20.0,
+                  ),
+                ),
+              ),
+
+              SizedBox(height: 20),
+
+              Visibility(
+                visible: startNFC,
+                child:
+                Icon(Icons.tap_and_play,
+                  color: Colors.white,
+                  size: 50,),
+              ),
+
+              SizedBox(height: 20), // Espacio entre el texto y el botón
+
+              Visibility(
+                visible: !isButtonDisabled,
+                child: ElevatedButton(
+                  onPressed: () {
+                    nfcHandler.addContact(palabras[0], palabras[1], palabras[2]);
+                    // Mostrar un SnackBar para indicar que el contacto ha sido añadido
+                    final snackBar = SnackBar(
+                      content: Text('Contacto añadido con éxito'),
+                    );
+                    ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                    setState(() {
+                      /// desactivo boton
+                      isButtonDisabled = true;
+                    });
+                  },
+                  child: Text('Añadir a contactos'),
+                ),
+              ),
+            ],
+          ),
+        ),
+    );
+  }
+} // class _ReadPageState
+
+
+
+
+
+
+
+//Página para ENVIAR
+class SendPage extends StatefulWidget {
+  const SendPage({Key? key}) : super(key: key);
+
+  @override
+  _SendPageState createState() => _SendPageState();
+}
+
+class _SendPageState extends State<SendPage> {
+  final GlobalKey<_SendPageState> _sendPageKey = GlobalKey<_SendPageState>();
+
+  int currentPageIndex = 0;
+  Function()? currentFunction;
+  String resultado = "Pulsar";
+  bool isButtonDisabled = true;
+  String _urlToWrite = "";
+  String? _nameToWrite = "";
+  String? _phoneToWrite = "";
+  String _emailToWrite = "";
+  ContentType _selectedContentType = ContentType.contacto;
+  bool selectedButton = true;
+  bool selectedButton2 = false;
+  bool selectedButton3 = false;
+  String? _contact;
+  TextEditingController _urlController = TextEditingController(text: "https://");
+  bool startNFC = false;
+
+
+//inicializo el manejador
+  NfcHandler nfcHandler = NfcHandler();
+
+  void writeUrl() async {
+    setState(() {
+      resultado = "Acerca tu teléfono a otro para compartir la URL";
+      selectedButton2 = false;
+    });
+    nfcHandler.writeUrl(_urlToWrite);
+  }
+
+  void writeContact() async {
+    setState(() {
+      resultado = "Acerca tu teléfono a otro para compartir el contacto";
+      selectedButton2 = false;
+      /// desactivo boton
+      isButtonDisabled = true;
+    });
+    nfcHandler.writeContact(_nameToWrite!, _phoneToWrite!, _emailToWrite);
+  }
+
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.deepPurpleAccent,
+      child:
+            /// Send page
+            Center(
+              child: Stack(
+        children: <Widget>[
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Visibility(
+                    visible: selectedButton,
+                    child: Column(
+                      children: <Widget>[
+                        Card(
+                          child: ListTile(
+                            leading: Icon(Icons.web),
+                            title: Text('URL'),
+                            subtitle: Text('Envía una página web'),
+                            onTap: () {
+                              setState(() {
+                                _selectedContentType = ContentType.url;
+                                selectedButton = false; // botones URL, contacto...
+                                selectedButton2 = true; //boton flotante
+                                selectedButton3 = false; // enviar contacto
+                                currentFunction = writeUrl;
+                              });
+                            },
+                          ),
+                        ),
+                        Card(
+                          child: ListTile(
+                            leading: Icon(Icons.contacts),
+                            title: Text('Contacto de agenda'),
+                            subtitle: Text('Envía un contacto nuevo o existente'),
+                            onTap: () {
+                              setState(() {
+                                _selectedContentType = ContentType.contacto;
+                                selectedButton = false; // botones URL, contacto...
+                                selectedButton2 = true; //boton flotante
+                                selectedButton3 = true; // enviar contacto
+                                currentFunction = writeContact;
+                              });
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+
+
+                  // formulario enviar contacto
+                  Visibility(
+                    visible: selectedButton2 && selectedButton3,
+                    child:
+                    Container(
+                      width: 300.0,
+                      decoration: BoxDecoration(
+                        color: Colors.white, // Fondo blanco del Container
+                        borderRadius: BorderRadius.circular(10.0), // Borde redondeado, ajusta según sea necesario
+                      ),
+                      child:
+                      TextField(
+                        onChanged: (value) {
+                          setState(() {
+                            _nameToWrite = value;
+                          });
+                        },
+                        decoration: InputDecoration(
+                          contentPadding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0), // Ajusta el espacio interno según sea necesario
+                          hintText: 'Nombre',
+                          border: InputBorder.none, // Elimina el borde del TextField
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Visibility(
+                    visible: selectedButton2 && selectedButton3,
+                    child:
+                    Container(
+                      width: 300.0,
+                      decoration: BoxDecoration(
+                        color: Colors.white, // Fondo blanco del Container
+                        borderRadius: BorderRadius.circular(10.0), // Borde redondeado, ajusta según sea necesario
+                      ),
+                      child:
+                      TextField(
+                        keyboardType: TextInputType.phone,
+                        onChanged: (value) {
+                          setState(() {
+                            _phoneToWrite = value;
+                          });
+                        },
+                        decoration: InputDecoration(
+                          contentPadding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0), // Ajusta el espacio interno según sea necesario
+                          hintText: 'Teléfono',
+                          border: InputBorder.none, // Elimina el borde del TextField
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  Visibility(
+                    visible: selectedButton2 && selectedButton3,
+                    child:
+                    Container(
+                      width: 300.0,
+                      decoration: BoxDecoration(
+                        color: Colors.white, // Fondo blanco del Container
+                        borderRadius: BorderRadius.circular(10.0), // Borde redondeado, ajusta según sea necesario
+                      ),
+                      child:
+                      TextField(
+                        keyboardType: TextInputType.emailAddress,
+                        onChanged: (value) {
+                          setState(() {
+                            _emailToWrite = value;
+                          });
+                        },
+                        decoration: InputDecoration(
+                          contentPadding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0), // Ajusta el espacio interno según sea necesario
+                          hintText: 'Email',
+                          border: InputBorder.none, // Elimina el borde del TextField
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 20),
+
+                  // botón importar contacto
+                  Visibility(
+                    visible: _selectedContentType == ContentType.contacto &&
+                        !selectedButton && selectedButton2,
+                    child: ElevatedButton(
+                      child: const Text("Seleccionar contacto de agenda..."),
+                      onPressed: () async {
+                        final Picker.FullContact contact =
+                        (await Picker.FlutterContactPicker.pickFullContact());
+                        setState(() {
+                          _contact = contact.toString();
+                          _nameToWrite = contact.name?.nickName;
+                          _phoneToWrite = contact.phones?.first.number;
+                          print("CONTACT: " + contact.toString());
+                        });
+                        writeContact();
+                      },
+                    ),
+                  ),
+
+                  Visibility(
+                    visible: !selectedButton2 && !selectedButton,
+                    child:
+                    Text('$resultado',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20.0,
+                      ),
+                    ),
+                  ),
+
+                  SizedBox(height: 20),
+
+                  Visibility(
+                    visible: !selectedButton2 && !selectedButton,
+                    child:
+                    Icon(Icons.tap_and_play,
+                      color: Colors.white,
+                      size: 50,),
+                  ),
+
+                  //formulario URL
+                  Visibility(
+                    visible: selectedButton2 && !selectedButton3,
+                    child:
+                    Container(
+                      width: 300.0,
+                      decoration: BoxDecoration(
+                        color: Colors.white, // Fondo blanco del Container
+                        borderRadius: BorderRadius.circular(10.0), // Borde redondeado, ajusta según sea necesario
+                      ),
+                      child:
+                      TextField(
+                        controller: _urlController,
+                        onChanged: (value) {
+                          setState(() {
+                            _urlToWrite = value;
+                          });
+                        },
+                        decoration: InputDecoration(
+                          contentPadding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 15.0), // Ajusta el espacio interno según sea necesario
+                          hintText: 'Ingrese la URL',
+                          border: InputBorder.none, // Elimina el borde del TextField
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // botón flotante
+                  Visibility(
+                    visible: selectedButton2,
+                    child:
+                    Align(),
+                  ),
+                ],
+              ),
+              Visibility(
+                  visible: selectedButton2,
+                  child:
+                    Positioned(
+                        bottom: 16.0,
+                        right: 10.0,
+                        child:
+                          FloatingActionButton(
+                            onPressed: currentFunction,
+                            child: Icon(Icons.send),
+                          ),
+                    ),
+              ),
+              ]
+              ),
+            ),
+    );
+  }
+} // class _SendPageState
+
+
 
 
 

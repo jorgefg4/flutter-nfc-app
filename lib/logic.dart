@@ -13,40 +13,25 @@ import 'model/record.dart';
 
 
 class NfcHandler {
-
   List<SharedFile>? list;
-  late StreamSubscription _intentDataStreamSubscription;
-  late List<SharedMediaFile> _sharedFiles;
-  String? _sharedText;
-  Image? _contactPhoto;
-  int currentPageIndex = 0;
   IconData currentIcon = Icons.tap_and_play;
-  Function()? currentFunction;
-  String _resultado = "Pulsar";
-  late List<String> palabras;
-  bool isButtonDisabled = true;
-  String _urlToWrite = "";
-  String? _nameToWrite = "";
-  String? _phoneToWrite = "";
-  String _emailToWrite = "";
-  ContentType _selectedContentType = ContentType.contacto;
-  bool selectedButton = false;
-  bool selectedButton2 = false;
-  bool selectedButton3 = false;
   String? _contact;
   final _flutterNfcHcePlugin = FlutterNfcHce(); //plugin instance
-  TextEditingController _urlController = TextEditingController(
-      text: "https://");
-  bool _startNFC = false;
+  TextEditingController _urlController = TextEditingController(text: "https://");
 
 
-  void _writeUrl() async {
+
+  // constructor
+  NfcHandler({
+    this.list,
+    this.currentIcon = Icons.tap_and_play,
+  });
+
+
+
+
+  void writeUrl(String urlToWrite) async {
     try {
-      setState(() {
-        _resultado = "Acerca tu teléfono a otro para compartir la URL";
-        selectedButton2 = false;
-      });
-
       //getPlatformVersion
       var platformVersion = await _flutterNfcHcePlugin.getPlatformVersion();
 
@@ -54,14 +39,13 @@ class NfcHandler {
       bool? isNfcHceSupported = await _flutterNfcHcePlugin.isNfcHceSupported();
 
       //isSecureNfcEnabled
-      bool? isSecureNfcEnabled = await _flutterNfcHcePlugin
-          .isSecureNfcEnabled();
+      bool? isSecureNfcEnabled = await _flutterNfcHcePlugin.isSecureNfcEnabled();
 
       //isNfcEnabled
       bool? isNfcEnabled = await _flutterNfcHcePlugin.isNfcEnabled();
 
       //start nfc hce
-      var result = await _flutterNfcHcePlugin.startNfcHce("URL:" + _urlToWrite);
+      var result = await _flutterNfcHcePlugin.startNfcHce("URL:" + urlToWrite);
     } catch (e) {
       // Manejar cualquier error
       print('Error en NFC: $e');
@@ -69,16 +53,9 @@ class NfcHandler {
   } // _writeUrl()
 
 
-  void _writeContact() async {
+
+  void writeContact(String nameToWrite, String phoneToWrite, String emailToWrite) async {
     try {
-      setState(() {
-        _resultado = "Acerca tu teléfono a otro para compartir el contacto";
-        selectedButton2 = false;
-
-        /// desactivo boton
-        isButtonDisabled = true;
-      });
-
       //getPlatformVersion
       var platformVersion = await _flutterNfcHcePlugin.getPlatformVersion();
 
@@ -93,8 +70,8 @@ class NfcHandler {
       bool? isNfcEnabled = await _flutterNfcHcePlugin.isNfcEnabled();
 
       //nfc content
-      var content = "CONTACTO:" + _nameToWrite! + "*" + _phoneToWrite! + "*" +
-          _emailToWrite;
+      var content = "CONTACTO:" + nameToWrite! + "*" + phoneToWrite! + "*" +
+          emailToWrite;
 
       //start nfc hce
       var result = await _flutterNfcHcePlugin.startNfcHce(content);
@@ -105,12 +82,15 @@ class NfcHandler {
   } // _writeContact()
 
 
-  void initNFC() async {
+
+
+  Future<String> initNFC() async {
+    Completer<String> completer = Completer<String>();
+
     try {
-      setState(() {
-        _resultado = "Esperando lectura...";
-      });
       await NfcManager.instance.startSession(onDiscovered: (NfcTag tag) async {
+        String resultado = "resultado vacio";
+
         // Se ha descubierto una etiqueta NFC
         print('Tag descubierta: ${tag.data}');
 
@@ -133,98 +113,30 @@ class NfcHandler {
             print(_mensaje);
             if (_mensaje is WellknownTextRecord) {
               String content = _mensaje.text.toString();
-
-              if (content.startsWith("URL:")) {
-                // Es una URL
-                setState(() {
-                  _resultado =
-                      content.substring(4) + "\nAbriendo navegador...";
-                });
-
-                // esperar 1 segundo antes de abrir el navegador
-                await Future.delayed(Duration(milliseconds: 2000));
-
-                Uri url = Uri.parse(content.substring(4));
-                //lanzo el navegador predeterminado del movil con la url
-                if (await canLaunchUrl(url)) {
-                  await launchUrl(
-                    url,
-                    mode: LaunchMode.externalApplication,
-                  );
-                  setState(() {
-                    _resultado =
-                        content.substring(4);
-                  });
-                  return;
-                } else {
-                  throw 'No se pudo abrir la URL';
-                }
-              } else if (content.startsWith("CONTACTO:")) {
-                // Es un contacto
-                String contactoData = content.substring(9);
-                palabras = contactoData.split("*");
-                setState(() {
-                  _resultado =
-                      "---- Contacto recibido ----\n" + "Nombre: " +
-                          palabras[0] +
-                          "\nTeléfono: " + palabras[1] + "\nEmail: " +
-                          palabras[2];
-                  isButtonDisabled = false;
-                });
-              }
+              resultado = content;
             }
           }
         }
+        completer.complete(resultado);
       });
     } catch (e) {
       // Manejar cualquier error
       print('Error en NFC: $e');
     }
+
+    return completer.future;
   } // initNFC()
 
 
-  void addContact() async {
+
+  void addContact(String name, String phone, String email) async {
     // Crear un nuevo contacto
     Contact contacto = Contact(
-      givenName: palabras[0],
-      phones: [Item(label: 'teléfono', value: palabras[1])],
-      emails: [Item(label: 'email', value: palabras[2])],
+      givenName: name,
+      phones: [Item(label: 'teléfono', value: phone)],
+      emails: [Item(label: 'email', value: email)],
     );
     await ContactsService.addContact(contacto);
-    setState(() {
-      /// desactivo boton
-      isButtonDisabled = true;
-    });
-    // Mostrar un SnackBar para indicar que el contacto ha sido añadido
-    final snackBar = SnackBar(
-      content: Text('Contacto añadido con éxito'),
-    );
-    ScaffoldMessenger.of(context).showSnackBar(snackBar);
   } // addContact()
 
-
-// Función para mostrar la ventana emergente de ayuda
-  void _showHelpDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Ayuda'),
-          content: Text(
-            'Aquí puedes proporcionar información de ayuda.',
-          ),
-          actions: <Widget>[
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('Cerrar'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-
-}
+} // class NfcHandler
