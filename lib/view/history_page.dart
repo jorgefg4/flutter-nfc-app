@@ -19,6 +19,13 @@ class _HistoryPageState extends State<HistoryPage> {
   final GlobalKey<_HistoryPageState> _readPageKey = GlobalKey<_HistoryPageState>();
 
   List<String> historial = [];
+  bool historialCargado = false;
+
+  @override
+  void initState() {
+    super.initState();
+    cargarHistorial();
+  }
 
 
   Future<void> cargarHistorial() async {
@@ -26,6 +33,7 @@ class _HistoryPageState extends State<HistoryPage> {
     setState(() {
       historial = prefs.getStringList('historial') ?? [];
     });
+    historialCargado = true;
   }
 
 
@@ -81,82 +89,88 @@ class _HistoryPageState extends State<HistoryPage> {
   @override
   Widget build(BuildContext context) {
 
-    cargarHistorial();
-
     return Container(
       color: Colors.deepPurpleAccent,
-      child: historial.isEmpty
-          ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-        Padding(
-        padding: EdgeInsets.all(16.0),
-        child:
-        Text(
-              "Prueba a leer para ver algo aquí.",
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 18.0,
-                fontWeight: FontWeight.bold,
+      child: historialCargado ?
+        Container(child: historial.isEmpty
+            ? Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+          Padding(
+          padding: EdgeInsets.all(16.0),
+          child:
+          Text(
+                "Prueba a leer para ver algo aquí.",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18.0,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-        ),
-            Icon(
-              Icons.history,
-              color: Colors.white,
-              size: 50,
-            ),
-          ],
-        ),
-      )
-          : Padding(
-        padding: EdgeInsets.all(8.0),
-        child: ListView(
-          children: List.generate(
-            10,
-                (index) {
-              if (index < historial.length) {
-                if (historial[index].startsWith("URL:")) {
-                  return Card(
-                    child: ListTile(
-                      leading: Icon(Icons.web),
-                      title: Text(historial[index].substring(4)),
-                      subtitle: Text('URL'),
-                      onTap: () {
-                        launchURL(historial[index].substring(4));
-                      },
-                    ),
-                  );
-                } else if (historial[index].startsWith("CONTACTO:")) {
-                  String contactoData = historial[index].substring(9);
-                  List<String> palabras = contactoData.split("*");
-                  return Card(
-                    child: ListTile(
-                      leading: Icon(Icons.contacts),
-                      title: Text(palabras[0]),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(palabras[1]),
-                          Text(palabras[2]),
-                        ],
+          ),
+              Icon(
+                Icons.history,
+                color: Colors.white,
+                size: 50,
+              ),
+            ],
+          ),
+        )
+            : Padding(
+          padding: EdgeInsets.all(8.0),
+          child: ListView(
+            children: List.generate(
+              10,
+                  (index) {
+                if (index < historial.length) {
+                  if (historial[index].startsWith("URL:")) {
+                    return Card(
+                      child: ListTile(
+                        leading: Icon(Icons.web),
+                        title: Text(historial[index].substring(4)),
+                        subtitle: Text('URL'),
+                        onTap: () {
+                          launchURL(historial[index].substring(4));
+                        },
                       ),
-                      onTap: () {
-                        _mostrarDialogoGuardarContacto(context, palabras);
-                      },
-                    ),
-                  );
+                    );
+                  } else if (historial[index].startsWith("CONTACTO:")) {
+                    String contactoData = historial[index].substring(9);
+                    List<String> palabras = contactoData.split("*");
+                    return Card(
+                      child: ListTile(
+                        leading: Icon(Icons.contacts),
+                        title: Text(palabras[0]),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(palabras[1]),
+                            Text(palabras[2]),
+                          ],
+                        ),
+                        onTap: () {
+                          _mostrarDialogoGuardarContacto(context, palabras);
+                        },
+                      ),
+                    );
+                  } else {
+                    return SizedBox.shrink();
+                  }
                 } else {
-                  return SizedBox.shrink();
+                  return SizedBox.shrink(); // retorna widget vacío y sin espacio
                 }
-              } else {
-                return SizedBox.shrink(); // retorna widget vacío y sin espacio
-              }
-            },
-          ).toList().reversed.toList(), // Invierte el orden de la lista
+              },
+            ).toList().reversed.toList(), // Invierte el orden de la lista
+          ),
         ),
-      ),
-    );
+        ): Center(child: Text('cargando...',
+                  style: TextStyle(
+                    color: Colors.deepPurpleAccent,
+                    fontSize: 18.0,
+                    fontWeight: FontWeight.bold,
+                  ),
+      )),
+      );
   }
 } // class _HistoryPageState
