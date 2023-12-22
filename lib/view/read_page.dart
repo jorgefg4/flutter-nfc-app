@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../logic.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 
 //Página para LECTURA
@@ -25,8 +26,30 @@ class _ReadPageState extends State<ReadPage> {
   NfcHandler nfcHandler = NfcHandler();
 
 
+  List<String> historial = [];
+
+  Future<void> cargarHistorial() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    setState(() {
+      historial = prefs.getStringList('historial') ?? [];
+    });
+  }
+
+  Future<void> guardarHistorial() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setStringList('historial', historial);
+  }
+
+
   void initNFC() async {
+    cargarHistorial();
     String result = await nfcHandler.initNFC();
+
+    if (historial.length >= 10) {
+      // Si la longitud es mayor o igual a 10, elimina el elemento más antiguo
+      historial.removeAt(0);
+    }
+
     if (result.startsWith("URL:")) {
       // Es una URL
       setState(() {
@@ -47,6 +70,7 @@ class _ReadPageState extends State<ReadPage> {
       }
       setState(() {
         resultado = result.substring(4);
+        historial.add(result);
       });
     } else if (result.startsWith("CONTACTO:")) {
       // Es un contacto
@@ -57,7 +81,9 @@ class _ReadPageState extends State<ReadPage> {
       setState(() {
         resultado;
       });
+      historial.add(result);
     }
+    guardarHistorial();
   } // initNFC()
 
 

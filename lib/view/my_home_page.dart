@@ -7,6 +7,8 @@ import 'package:prueba1/view/read_page.dart';
 import 'package:prueba1/view/send_page.dart';
 import 'package:prueba1/view/send_url_page.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'history_page.dart';
 
 
 class MyApp extends StatelessWidget {
@@ -40,6 +42,7 @@ class _MyHomePageState extends State<MyHomePage> {
   late StreamSubscription _intentDataStreamSubscription;
   String? _sharedText;
   int currentPageIndex = 0;
+  List<String> historial = [];
 
 
   @override
@@ -116,7 +119,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
 
 
-
   @override
   Widget build(BuildContext context) {
 
@@ -147,7 +149,7 @@ class _MyHomePageState extends State<MyHomePage> {
           });
         },
         selectedIndex: currentPageIndex,
-        destinations: const <Widget>[
+        destinations:   <Widget>[
           NavigationDestination(
             icon: Icon(Icons.nfc),
             label: 'Leer',
@@ -157,10 +159,7 @@ class _MyHomePageState extends State<MyHomePage> {
             label: 'Enviar',
           ),
           NavigationDestination(
-            icon: Badge(
-              label: Text('2'),
-              child: Icon(Icons.history),
-            ),
+            icon: Icon(Icons.history),
             label: 'Historial',
           ),
         ],
@@ -195,39 +194,9 @@ class _MyHomePageState extends State<MyHomePage> {
         children: [
           ReadPage(key: UniqueKey()),
           SendPage(key: UniqueKey()),
+          HistoryPage(key: UniqueKey()),
         ],
       ),
-
-      //
-      //     /// Historial page
-      //     Padding(
-      //       padding: EdgeInsets.all(8.0),
-      //       child: Column(
-      //         children: <Widget>[
-      //           Card(
-      //             child: ListTile(
-      //               leading: Icon(Icons.notifications_sharp),
-      //               title: Text('Notification 1'),
-      //               subtitle: Text('This is a notification'),
-      //             ),
-      //           ),
-      //           Card(
-      //             child: ListTile(
-      //               leading: Icon(Icons.notifications_sharp),
-      //               title: Text('Notification 2'),
-      //               subtitle: Text('This is a notification'),
-      //             ),
-      //           ),
-      //         ],
-      //       ),
-      //     ),
-      //
-      //   ][currentPageIndex],
-      // ),
-
-      // drawer: Drawer(
-      //   child: drawerItems,
-      // ),
     );
   } // Widget build
 } // class _MyHomeState()
