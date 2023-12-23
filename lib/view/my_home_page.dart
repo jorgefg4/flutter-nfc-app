@@ -43,11 +43,13 @@ class _MyHomePageState extends State<MyHomePage> {
   String? _sharedText;
   int currentPageIndex = 0;
   List<String> historial = [];
+  late String helpMessage;
 
 
   @override
   void initState() {
     super.initState();
+    helpMessage = 'Puede leer contenido de otro teléfono pulsando el botón de iniciar lectura y acercando su teléfono a otro a una distancia de pocos centímetros. Asegúrese de que NFC está activaod en su terminal. ';
 
     bool isUrl(String value) {
       // Expresión regular para comprobar si la cadena es una URL
@@ -102,7 +104,7 @@ class _MyHomePageState extends State<MyHomePage> {
         return AlertDialog(
           title: Text('Ayuda'),
           content: Text(
-            'Aquí puedes proporcionar información de ayuda.',
+              helpMessage,
           ),
           actions: <Widget>[
             TextButton(
@@ -130,18 +132,21 @@ class _MyHomePageState extends State<MyHomePage> {
               case 0:
                 setState(() {
                   currentPageIndex = index;
+                  helpMessage = 'Puede leer contenido de otro teléfono pulsando el botón de iniciar lectura y acercando su teléfono a otro a una distancia de pocos centímetros. Asegúrese de que NFC está activaod en su terminal. ';
                 });
 
                 break;
               case 1:
                 setState(() {
                   currentPageIndex = index;
+                  helpMessage = 'Seleccione uno de los formatos de información disponibles para enviar hacia otro teléfono.';
                 });
 
                 break;
               case 2:
                 setState(() {
                   currentPageIndex = index;
+                  helpMessage = 'Esta página muestra el historial de los últimos 10 elementos leídos. Pulse sobre cualquiera de ellos para visualizar o guardar.';
                 });
 
                 break;
