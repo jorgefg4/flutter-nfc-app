@@ -1,11 +1,13 @@
 import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:fluttercontactpicker/fluttercontactpicker.dart' as Picker;
 import '../logic.dart';
-
-
+// import 'package:location_picker_flutter_map/location_picker_flutter_map.dart';
+// import 'package:map_picker_free/map_picker_free.dart';
+import 'package:open_street_map_search_and_pick/open_street_map_search_and_pick.dart';
 
 //Página para ENVIAR
 class SendPage extends StatefulWidget {
@@ -27,10 +29,14 @@ class _SendPageState extends State<SendPage> {
   String? _nameToWrite = "";
   String? _phoneToWrite = "";
   String _emailToWrite = "";
+  late double _latitude;
+  late double _longitude;
+  String? _address = "";
   ContentType _selectedContentType = ContentType.contacto;
   bool selectedButton = true;
   bool selectedButton2 = false;
   bool selectedButton3 = false;
+  bool selectedButton4 = false;
   String? _contact;
   TextEditingController _urlController = TextEditingController(text: "https://");
 
@@ -53,6 +59,15 @@ class _SendPageState extends State<SendPage> {
       isButtonDisabled = true;
     });
     nfcHandler.writeContact(_nameToWrite!, _phoneToWrite!, _emailToWrite);
+  }
+
+  void writeLocation() async {
+    setState(() {
+      resultado = "Acerca tu teléfono a otro para compartir la ubicación";
+      selectedButton2 = false;
+      selectedButton4 = false;
+    });
+    nfcHandler.writeLocation(_latitude, _longitude, _address!);
   }
 
 
@@ -84,6 +99,7 @@ class _SendPageState extends State<SendPage> {
                                 selectedButton = false; // botones URL, contacto...
                                 selectedButton2 = true; //boton flotante
                                 selectedButton3 = false; // enviar contacto
+                                selectedButton4 = false; // enviar wifi
                                 currentFunction = writeUrl;
                               });
                             },
@@ -100,7 +116,24 @@ class _SendPageState extends State<SendPage> {
                                 selectedButton = false; // botones URL, contacto...
                                 selectedButton2 = true; //boton flotante
                                 selectedButton3 = true; // enviar contacto
+                                selectedButton4 = false; // enviar wifi
                                 currentFunction = writeContact;
+                              });
+                            },
+                          ),
+                        ),
+                        Card(
+                          child: ListTile(
+                            leading: Icon(Icons.location_on),
+                            title: Text('Ubicación'),
+                            subtitle: Text('Envía una ubicación seleccionando de un mapa'),
+                            onTap: () {
+                              setState(() {
+                                _selectedContentType = ContentType.url;
+                                selectedButton = false; // botones URL, contacto...
+                                selectedButton2 = false; //boton flotante
+                                selectedButton3 = false; // enviar contacto
+                                selectedButton4 = true; // enviar ubicacion
                               });
                             },
                           ),
@@ -211,7 +244,7 @@ class _SendPageState extends State<SendPage> {
                   ),
 
                   Visibility(
-                    visible: !selectedButton2 && !selectedButton,
+                    visible: !selectedButton2 && !selectedButton && !selectedButton4,
                     child:
                     Text('$resultado',
                       textAlign: TextAlign.center,
@@ -225,7 +258,7 @@ class _SendPageState extends State<SendPage> {
                   SizedBox(height: 20),
 
                   Visibility(
-                    visible: !selectedButton2 && !selectedButton,
+                    visible: !selectedButton2 && !selectedButton && !selectedButton4,
                     child:
                     Icon(Icons.tap_and_play,
                       color: Colors.white,
@@ -234,7 +267,7 @@ class _SendPageState extends State<SendPage> {
 
                   //formulario URL
                   Visibility(
-                    visible: selectedButton2 && !selectedButton3,
+                    visible: selectedButton2 && !selectedButton3 && !selectedButton4,
                     child:
                     Container(
                       width: 300.0,
@@ -259,6 +292,8 @@ class _SendPageState extends State<SendPage> {
                     ),
                   ),
 
+
+
                   // botón flotante
                   Visibility(
                     visible: selectedButton2,
@@ -279,6 +314,30 @@ class _SendPageState extends State<SendPage> {
                     child: Icon(Icons.send),
                   ),
                 ),
+              ),
+
+              // mapa
+              Visibility(
+                  visible: selectedButton4,
+                  child:
+                  OpenStreetMapSearchAndPick(
+                    buttonTextStyle:
+                    const TextStyle(fontSize: 18, fontStyle: FontStyle.normal),
+                    buttonColor: Colors.deepPurpleAccent,
+                    buttonText: 'Enviar ubicación',
+                    locationPinIconColor: Colors.deepPurpleAccent,
+                    locationPinText: '',
+                    onPicked: (pickedData) {
+                      _latitude = pickedData.latLong.latitude;
+                      _longitude = pickedData.latLong.longitude;
+                      _address = pickedData.addressName;
+                      print(pickedData.latLong.latitude);
+                      print(pickedData.latLong.longitude);
+                      print(pickedData.address);
+                      print(pickedData.addressName);
+                      writeLocation();
+                    },
+                  )
               ),
             ]
         ),

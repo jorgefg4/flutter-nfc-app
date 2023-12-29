@@ -4,9 +4,11 @@ import 'dart:ui';
 import 'package:contacts_service/contacts_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_nfc_hce/flutter_nfc_hce.dart';
 import 'package:flutter_sharing_intent/model/sharing_file.dart';
 import 'package:nfc_manager/nfc_manager.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'model/record.dart';
 
 
@@ -79,6 +81,34 @@ class NfcHandler {
 
 
 
+  void writeLocation(double latitudeToWrite, double longitudeToWrite, String address) async {
+    try {
+      //getPlatformVersion
+      var platformVersion = await _flutterNfcHcePlugin.getPlatformVersion();
+
+      //isNfcHceSupported
+      bool? isNfcHceSupported = await _flutterNfcHcePlugin.isNfcHceSupported();
+
+      //isSecureNfcEnabled
+      bool? isSecureNfcEnabled = await _flutterNfcHcePlugin
+          .isSecureNfcEnabled();
+
+      //isNfcEnabled
+      bool? isNfcEnabled = await _flutterNfcHcePlugin.isNfcEnabled();
+
+      //nfc content
+      var content = "LOCATION:" + latitudeToWrite.toString() + "*" + longitudeToWrite.toString() + "*" + address;
+
+      //start nfc hce
+      var result = await _flutterNfcHcePlugin.startNfcHce(content);
+    } catch (e) {
+      // Manejar cualquier error
+      print('Error en NFC: $e');
+    }
+  }
+
+
+
 
   Future<String> initNFC() async {
     Completer<String> completer = Completer<String>();
@@ -135,5 +165,18 @@ class NfcHandler {
     );
     await ContactsService.addContact(contacto);
   } // addContact()
+
+
+  void openMaps(String latitude, String longitude) async {
+    String googleMapsUrl = 'https://www.google.com/maps/search/?api=1&query=' + latitude + "," + longitude;
+
+    Uri url = Uri.parse(googleMapsUrl);
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url);
+    } else {
+      throw 'No se pudo abrir Google Maps';
+    }
+  }
+
 
 } // class NfcHandler

@@ -20,6 +20,8 @@ class _HistoryPageState extends State<HistoryPage> {
 
   List<String> historial = [];
   bool historialCargado = false;
+  //inicializo el manejador
+  NfcHandler nfcHandler = NfcHandler();
 
   @override
   void initState() {
@@ -49,6 +51,8 @@ class _HistoryPageState extends State<HistoryPage> {
       throw 'No se pudo abrir la URL';
     }
   }
+
+
 
 
   void _mostrarDialogoGuardarContacto(BuildContext context, List<String> contactoInfo) {
@@ -154,7 +158,27 @@ class _HistoryPageState extends State<HistoryPage> {
                         },
                       ),
                     );
-                  } else {
+                  } else if (historial[index].startsWith("LOCATION:"))  {
+                    String wifiData = historial[index].substring(9);
+                    List<String> palabras = wifiData.split("*");
+                    return Card(
+                      child: ListTile(
+                        leading: Icon(Icons.location_on),
+                        title: Text(palabras[2]),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(palabras[0]),
+                            Text(palabras[1])
+                          ],
+                        ),
+                        onTap: () {
+                            nfcHandler.openMaps(palabras[0], palabras[1]);
+                        },
+                      ),
+                    );
+                  }
+                  else {
                     return SizedBox.shrink();
                   }
                 } else {

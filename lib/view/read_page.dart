@@ -21,7 +21,10 @@ class _ReadPageState extends State<ReadPage> {
   String resultado = "";
   late List<String> palabras;
   bool isButtonDisabled = true;
+  bool locationVisible = false;
   bool startNFC = false;
+  bool showText = true;
+  String address = "";
 //inicializo el manejador
   NfcHandler nfcHandler = NfcHandler();
 
@@ -41,6 +44,7 @@ class _ReadPageState extends State<ReadPage> {
   }
 
 
+
   void initNFC() async {
     cargarHistorial();
     String result = await nfcHandler.initNFC();
@@ -53,7 +57,7 @@ class _ReadPageState extends State<ReadPage> {
     if (result.startsWith("URL:")) {
       // Es una URL
       setState(() {
-        resultado = result.substring(4) + "\nAbriendo navegador...";
+        resultado = "---- URL recibida ----\n\n" + result.substring(4) + "\n\nAbriendo navegador...";
       });
       // esperar 1 segundo antes de abrir el navegador
       await Future.delayed(Duration(milliseconds: 2000));
@@ -76,10 +80,25 @@ class _ReadPageState extends State<ReadPage> {
       // Es un contacto
       String contactoData = result.substring(9);
       palabras = contactoData.split("*");
-      resultado = "---- Contacto recibido ----\n" + "Nombre: " + palabras[0] + "\nTeléfono: " + palabras[1] + "\nEmail: " + palabras[2];
+      resultado = "---- Contacto recibido ----\n\n" + "Nombre: " + palabras[0] + "\nTeléfono: " + palabras[1] + "\nEmail: " + palabras[2];
       isButtonDisabled = false;
       setState(() {
         resultado;
+      });
+      historial.add(result);
+    } else if (result.startsWith("LOCATION:")) {
+      // Es una ubicacion
+      String wifiData = result.substring(9);
+      palabras = wifiData.split("*");
+      setState(() {
+        locationVisible = true;
+        address = palabras[2];
+      });
+      // esperar 1 segundo antes de abrir maps
+      await Future.delayed(Duration(milliseconds: 3000));
+      nfcHandler.openMaps(palabras[0], palabras[1]);
+      setState(() {
+        showText = false;
       });
       historial.add(result);
     }
@@ -141,7 +160,7 @@ class _ReadPageState extends State<ReadPage> {
             ),
 
             Visibility(
-              visible: startNFC,
+              visible: startNFC && !locationVisible,
               child:
               Text('$resultado',
                 textAlign: TextAlign.center,
@@ -150,6 +169,42 @@ class _ReadPageState extends State<ReadPage> {
                   fontSize: 20.0,
                 ),
               ),
+            ),
+
+            Visibility(
+              visible: startNFC && locationVisible,
+              child:
+                RichText(
+                  textAlign: TextAlign.center,
+                  text: TextSpan(
+                    style: DefaultTextStyle.of(context).style,
+                    children: <TextSpan>[
+                      TextSpan(
+                        text: "---- Ubicación recibida ----\n\n",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20.0,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      TextSpan(
+                          text: address,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20.0,
+                          )
+                      ),
+                      TextSpan(
+                        text: showText ? "\n\nAbriendo mapas..." : "",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20.0,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
             ),
 
             SizedBox(height: 20),
