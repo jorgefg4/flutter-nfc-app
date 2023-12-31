@@ -1,9 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../logic.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:add_2_calendar/add_2_calendar.dart';
 
 
 //Página para LECTURA
@@ -46,6 +48,15 @@ class _ReadPageState extends State<ReadPage> {
 
 
   void initNFC() async {
+    //comprueba si NFC está activado
+    bool nfcAvailable = await NfcManager.instance.isAvailable();
+    if(nfcAvailable == false) {
+      setState(() {
+        resultado = "NFC descativado. Por favor, actívalo e inicia de nuevo la lectura.";
+      });
+      return;
+    }
+
     cargarHistorial();
     String result = await nfcHandler.initNFC();
 
@@ -73,7 +84,7 @@ class _ReadPageState extends State<ReadPage> {
         throw 'No se pudo abrir la URL';
       }
       setState(() {
-        resultado = result.substring(4);
+        resultado = "---- URL recibida ----\n\n" + result.substring(4);
         historial.add(result);
       });
     } else if (result.startsWith("CONTACTO:")) {
@@ -101,6 +112,21 @@ class _ReadPageState extends State<ReadPage> {
         showText = false;
       });
       historial.add(result);
+    } else if (result.startsWith("EVENT:")) {
+      // Es un evento
+      String eventData = result.substring(6);
+      palabras = eventData.split("*");
+      setState(() {
+        resultado = "---- Evento recibido ----\n\n" + "Título: " + palabras[0] + "\nLugar: " + palabras[1] + "\nFecha inicio: " + palabras[2] + "\nFecha fin: " + palabras[3] + "\n\nAbriendo calendario...";
+      });
+      // esperar 1 segundo antes de abrir calendario
+      await Future.delayed(Duration(milliseconds: 3000));
+
+      nfcHandler.addEvent(palabras[0], palabras[1], palabras[2], palabras[3]);
+      setState(() {
+        resultado = "---- Evento recibido ----\n\n" + "Título: " + palabras[0] + "\nLugar: " + palabras[1] + "\nFecha inicio: " + palabras[2] + "\nFecha fin: " + palabras[3];
+      });
+      historial.add(result);
     }
     guardarHistorial();
   } // initNFC()
@@ -111,8 +137,6 @@ class _ReadPageState extends State<ReadPage> {
     return Container(
       color: Colors.deepPurpleAccent,
       child:
-
-      /// Read page
       Center(
         child:
         Column(

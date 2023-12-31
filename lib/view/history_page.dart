@@ -39,22 +39,6 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 
 
-  // Función para lanzar la URL en el navegador
-  void launchURL(String url) async {
-    Uri uri = Uri.parse(url);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(
-        uri,
-        mode: LaunchMode.externalApplication,
-      );
-    } else {
-      throw 'No se pudo abrir la URL';
-    }
-  }
-
-
-
-
   void _mostrarDialogoGuardarContacto(BuildContext context, List<String> contactoInfo) {
     showDialog(
       context: context,
@@ -71,8 +55,6 @@ class _HistoryPageState extends State<HistoryPage> {
             ),
             TextButton(
               onPressed: () {
-                //inicializo el manejador
-                NfcHandler nfcHandler = NfcHandler();
                 nfcHandler.addContact(contactoInfo[0], contactoInfo[1], contactoInfo[2]);
                 Navigator.of(context).pop(); // Cierra el diálogo después de guardar.
                 final snackBar = SnackBar(
@@ -90,9 +72,9 @@ class _HistoryPageState extends State<HistoryPage> {
 
 
 
+
   @override
   Widget build(BuildContext context) {
-
     return Container(
       color: Colors.deepPurpleAccent,
       child: historialCargado ?
@@ -135,7 +117,7 @@ class _HistoryPageState extends State<HistoryPage> {
                         title: Text(historial[index].substring(4)),
                         subtitle: Text('URL'),
                         onTap: () {
-                          launchURL(historial[index].substring(4));
+                          nfcHandler.launchURL(historial[index].substring(4));
                         },
                       ),
                     );
@@ -174,6 +156,26 @@ class _HistoryPageState extends State<HistoryPage> {
                         ),
                         onTap: () {
                             nfcHandler.openMaps(palabras[0], palabras[1]);
+                        },
+                      ),
+                    );
+                  } else if (historial[index].startsWith("EVENT:"))  {
+                    String eventData = historial[index].substring(6);
+                    List<String> palabras = eventData.split("*");
+                    return Card(
+                      child: ListTile(
+                        leading: Icon(Icons.calendar_month),
+                        title: Text(palabras[0]),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(palabras[1]),
+                            Text(palabras[2]),
+                            Text(palabras[3])
+                          ],
+                        ),
+                        onTap: () {
+                          nfcHandler.addEvent(palabras[0], palabras[1], palabras[2], palabras[3]);
                         },
                       ),
                     );

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:core';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:prueba1/view/read_page.dart';
 import 'package:prueba1/view/send_page.dart';
@@ -21,6 +22,15 @@ class MyApp extends StatelessWidget {
       title: 'QuickNFC',
       theme:
       ThemeData(useMaterial3: true),
+
+      localizationsDelegates: [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ],
+      supportedLocales: [
+        const Locale('es', 'ES'), // Establece el idioma español
+      ],
+
       home: const MyHomePage(title: 'QuickNFC'),
     );
   } // Widget build
@@ -122,11 +132,56 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
 
+  void _showBackDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('¿Estás seguro?'),
+          content: const Text(
+            '¿Estás seguro de salir de la aplicación?',
+          ),
+          actions: <Widget>[
+            TextButton(
+              style: TextButton.styleFrom(
+                textStyle: Theme.of(context).textTheme.labelLarge,
+              ),
+              child: const Text('Cancelar'),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            ),
+            TextButton(
+              style: TextButton.styleFrom(
+                textStyle: Theme.of(context).textTheme.labelLarge,
+              ),
+              child: const Text('Salir'),
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
 
-    return Scaffold(
+    return
+      PopScope(
+          canPop: false,
+          onPopInvoked: (bool didPop) {
+            if (didPop) {
+              return;
+            }
+            _showBackDialog();
+          },
+    child: Scaffold(
       bottomNavigationBar: NavigationBar(
         onDestinationSelected: (int index) {
           setState(() {
@@ -204,6 +259,7 @@ class _MyHomePageState extends State<MyHomePage> {
           HistoryPage(key: UniqueKey()),
         ],
       ),
-    );
+    ),
+      );
   } // Widget build
 } // class _MyHomeState()

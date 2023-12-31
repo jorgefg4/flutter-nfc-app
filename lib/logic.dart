@@ -7,9 +7,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_nfc_hce/flutter_nfc_hce.dart';
 import 'package:flutter_sharing_intent/model/sharing_file.dart';
+import 'package:intl/intl.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'model/record.dart';
+import 'package:add_2_calendar/add_2_calendar.dart';
 
 
 class NfcHandler {
@@ -105,15 +107,48 @@ class NfcHandler {
       // Manejar cualquier error
       print('Error en NFC: $e');
     }
-  }
+  } //writeLocation()
+
+
+
+  void writeEvent(String titleToWrite, String locationToWrite, String initialDateToWrite, String endDateToWrite) async {
+    try {
+      //getPlatformVersion
+      var platformVersion = await _flutterNfcHcePlugin.getPlatformVersion();
+
+      //isNfcHceSupported
+      bool? isNfcHceSupported = await _flutterNfcHcePlugin.isNfcHceSupported();
+
+      //isSecureNfcEnabled
+      bool? isSecureNfcEnabled = await _flutterNfcHcePlugin
+          .isSecureNfcEnabled();
+
+      //isNfcEnabled
+      bool? isNfcEnabled = await _flutterNfcHcePlugin.isNfcEnabled();
+
+      //nfc content
+      var content = "EVENT:" + titleToWrite! + "*" + locationToWrite! + "*" +
+          initialDateToWrite + "*" + endDateToWrite;
+
+      //start nfc hce
+      var result = await _flutterNfcHcePlugin.startNfcHce(content);
+    } catch (e) {
+      // Manejar cualquier error
+      print('Error en NFC: $e');
+    }
+  } // _writeContact()
 
 
 
 
   Future<String> initNFC() async {
     Completer<String> completer = Completer<String>();
+    // bool nfcAvailable;
 
     try {
+      // nfcAvailable = await NfcManager.instance.isAvailable();
+      // print('NFC DISPONIBLE: ' + nfcAvailable.toString());
+
       await NfcManager.instance.startSession(onDiscovered: (NfcTag tag) async {
         String resultado = "resultado vacio";
 
@@ -176,7 +211,31 @@ class NfcHandler {
     } else {
       throw 'No se pudo abrir Google Maps';
     }
-  }
+  } // openMaps()
 
+  // Función para lanzar la URL en el navegador
+  void launchURL(String url) async {
+    Uri uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+    } else {
+      throw 'No se pudo abrir la URL';
+    }
+  } // launchURL
+
+
+  void addEvent(String title, String location, String initialDate, String endDate) async {
+    DateFormat formatoFecha = DateFormat('dd/MM/yyyy');
+    final Event event = Event(
+      title: title,
+      location: location,
+      startDate: formatoFecha.parse(initialDate),
+      endDate: formatoFecha.parse(endDate),
+    );
+    Add2Calendar.addEvent2Cal(event);
+  } // addContact()
 
 } // class NfcHandler
