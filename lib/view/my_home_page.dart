@@ -55,6 +55,15 @@ class _MyHomePageState extends State<MyHomePage> {
   List<String> historial = [];
   late String helpMessage;
 
+  Future<void> requestPermission() async {
+    // final status = await permission.request();
+
+    Map<Permission, PermissionStatus> statuses = await [
+      Permission.location,
+      Permission.contacts,
+    ].request();
+
+  }
 
   @override
   void initState() {
@@ -71,11 +80,10 @@ class _MyHomePageState extends State<MyHomePage> {
       return urlRegex.hasMatch(value);
     }
 
-    // solicito permisos para acceder a agenda de contactos
-    Permission permission = Permission.contacts;
-    permission.request();
-    Permission permission2 = Permission.location;
-    permission2.request();
+    requestPermission();
+
+
+
 
 
     // For sharing or opening urls/text coming from outside the app while the app is in the memory

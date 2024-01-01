@@ -165,7 +165,6 @@ class _SendPageState extends State<SendPage> {
                 children: <Widget>[
                   Visibility(
                     visible: selectedButton,
-                    child: Expanded(
                       child: ListView(
                         children: <Widget>[
                           Card(
@@ -238,11 +237,10 @@ class _SendPageState extends State<SendPage> {
                                 });
                               },
                             ),
+                            ),
+            ],
                           ),
-                        ],
-                      ),
                     ),
-                  ),
 
                   Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -586,7 +584,7 @@ class _SendPageState extends State<SendPage> {
                         },
                       )
                   ),
-                ]
+                ],
             ),
           ),
     );
