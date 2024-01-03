@@ -214,15 +214,16 @@ class NfcHandler {
   } // openMaps()
 
   // Función para lanzar la URL en el navegador
-  void launchURL(String url) async {
+  Future<String> launchURL(String url) async {
     Uri uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
       await launchUrl(
         uri,
         mode: LaunchMode.externalApplication,
       );
+      return '';
     } else {
-      throw 'No se pudo abrir la URL';
+      return 'No es posible abrir la URL';
     }
   } // launchURL
 

@@ -73,20 +73,17 @@ class _ReadPageState extends State<ReadPage> {
       // esperar 1 segundo antes de abrir el navegador
       await Future.delayed(Duration(milliseconds: 2000));
 
-      Uri url = Uri.parse(result.substring(4));
-      //lanzo el navegador predeterminado del movil con la url
-      if (await canLaunchUrl(url)) {
-        await launchUrl(
-          url,
-          mode: LaunchMode.externalApplication,
-        );
-      } else {
-        throw 'No se pudo abrir la URL';
+      String result2 = await nfcHandler.launchURL(result.substring(4));
+      if (result2 == 'No es posible abrir la URL'){
+        setState(() {
+          resultado = "---- URL recibida ----\n\n" + result.substring(4) + "\n\nNo es posible abrir la URL";
+        });
+      } else{
+        setState(() {
+          resultado = "---- URL recibida ----\n\n" + result.substring(4);
+          historial.add(result);
+        });
       }
-      setState(() {
-        resultado = "---- URL recibida ----\n\n" + result.substring(4);
-        historial.add(result);
-      });
     } else if (result.startsWith("CONTACTO:")) {
       // Es un contacto
       String contactoData = result.substring(9);

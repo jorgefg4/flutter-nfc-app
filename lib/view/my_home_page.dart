@@ -38,6 +38,7 @@ class MyApp extends StatelessWidget {
 
 
 
+
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
 
@@ -56,11 +57,11 @@ class _MyHomePageState extends State<MyHomePage> {
   late String helpMessage;
 
   Future<void> requestPermission() async {
-    // final status = await permission.request();
 
     Map<Permission, PermissionStatus> statuses = await [
       Permission.location,
       Permission.contacts,
+      Permission.calendarFullAccess,
     ].request();
 
   }
