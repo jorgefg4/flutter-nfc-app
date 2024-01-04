@@ -69,7 +69,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    helpMessage = 'Puede leer contenido de otro teléfono pulsando el botón de iniciar lectura y acercando su teléfono a otro a una distancia de pocos centímetros. Asegúrese de que NFC está activaod en su terminal. ';
+    helpMessage = 'Puede leer contenido de otro teléfono pulsando el botón de iniciar lectura y acercando su teléfono a otro a una distancia de pocos centímetros. Asegúrese de que NFC está activado en su terminal. ';
 
     bool isUrl(String value) {
       // Expresión regular para comprobar si la cadena es una URL
