@@ -1,6 +1,5 @@
 import 'dart:convert' show ascii, utf8;
 import 'dart:typed_data';
-
 import 'package:nfc_manager/nfc_manager.dart';
 
 abstract class Record {

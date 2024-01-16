@@ -4,9 +4,8 @@ import 'dart:ui';
 import 'package:contacts_service/contacts_service.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+// import 'package:flutter/services.dart';
 import 'package:flutter_nfc_hce/flutter_nfc_hce.dart';
-import 'package:flutter_sharing_intent/model/sharing_file.dart';
 import 'package:intl/intl.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -15,18 +14,18 @@ import 'package:add_2_calendar/add_2_calendar.dart';
 
 
 class NfcHandler {
-  List<SharedFile>? list;
-  IconData currentIcon = Icons.tap_and_play;
-  String? _contact;
+  // List<SharedFile>? list;
+  // IconData currentIcon = Icons.tap_and_play;
+  // String? _contact;
   final _flutterNfcHcePlugin = FlutterNfcHce(); //plugin instance
-  TextEditingController _urlController = TextEditingController(text: "https://");
+  // TextEditingController _urlController = TextEditingController(text: "https://");
 
 
   // constructor
-  NfcHandler({
-    this.list,
-    this.currentIcon = Icons.tap_and_play,
-  });
+  // NfcHandler({
+  //   // this.list,
+  //   // this.currentIcon = Icons.tap_and_play,
+  // });
 
 
 
@@ -136,18 +135,15 @@ class NfcHandler {
       // Manejar cualquier error
       print('Error en NFC: $e');
     }
-  } // _writeContact()
+  } // _writeEvent()
 
 
 
 
   Future<String> initNFC() async {
     Completer<String> completer = Completer<String>();
-    // bool nfcAvailable;
 
     try {
-      // nfcAvailable = await NfcManager.instance.isAvailable();
-      // print('NFC DISPONIBLE: ' + nfcAvailable.toString());
 
       await NfcManager.instance.startSession(onDiscovered: (NfcTag tag) async {
         String resultado = "resultado vacio";

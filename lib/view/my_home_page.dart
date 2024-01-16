@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:core';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:prueba1/view/read_page.dart';
@@ -166,8 +167,7 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
               child: const Text('Salir'),
               onPressed: () {
-                Navigator.pop(context);
-                Navigator.pop(context);
+                SystemNavigator.pop();
               },
             ),
           ],
