@@ -6,10 +6,12 @@ abstract class Record {
   NdefRecord toNdef();
 
   static Record fromNdef(NdefRecord record) {
-    if (record.typeNameFormat == NdefTypeNameFormat.nfcWellknown && record.type.length == 1 && record.type.first == 0x54)
-      return WellknownTextRecord.fromNdef(record);
-    if (record.typeNameFormat == NdefTypeNameFormat.nfcWellknown && record.type.length == 1 && record.type.first == 0x55)
-      return WellknownUriRecord.fromNdef(record);
+    if (record.typeNameFormat == NdefTypeNameFormat.nfcWellknown &&
+        record.type.length == 1 &&
+        record.type.first == 0x54) return WellknownTextRecord.fromNdef(record);
+    if (record.typeNameFormat == NdefTypeNameFormat.nfcWellknown &&
+        record.type.length == 1 &&
+        record.type.first == 0x55) return WellknownUriRecord.fromNdef(record);
     if (record.typeNameFormat == NdefTypeNameFormat.media)
       return MimeRecord.fromNdef(record);
     if (record.typeNameFormat == NdefTypeNameFormat.absoluteUri)
@@ -21,7 +23,8 @@ abstract class Record {
 }
 
 class WellknownTextRecord implements Record {
-  WellknownTextRecord({this.identifier, required this.languageCode, required this.text});
+  WellknownTextRecord(
+      {this.identifier, required this.languageCode, required this.text});
 
   final Uint8List? identifier;
 
@@ -120,7 +123,8 @@ class MimeRecord implements Record {
 }
 
 class AbsoluteUriRecord implements Record {
-  AbsoluteUriRecord({this.identifier, required this.uriType, required this.payload});
+  AbsoluteUriRecord(
+      {this.identifier, required this.uriType, required this.payload});
 
   final Uint8List? identifier;
 
@@ -150,7 +154,11 @@ class AbsoluteUriRecord implements Record {
 }
 
 class ExternalRecord implements Record {
-  ExternalRecord({this.identifier, required this.domain, required this.type, required this.data});
+  ExternalRecord(
+      {this.identifier,
+      required this.domain,
+      required this.type,
+      required this.data});
 
   final Uint8List? identifier;
 

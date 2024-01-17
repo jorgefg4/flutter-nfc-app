@@ -1,12 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:nfc_manager/nfc_manager.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../logic.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:add_2_calendar/add_2_calendar.dart';
-
 
 //Página para LECTURA
 class ReadPage extends StatefulWidget {
@@ -17,7 +13,6 @@ class ReadPage extends StatefulWidget {
 }
 
 class _ReadPageState extends State<ReadPage> {
-
   final GlobalKey<_ReadPageState> _readPageKey = GlobalKey<_ReadPageState>();
 
   String resultado = "";
@@ -27,9 +22,9 @@ class _ReadPageState extends State<ReadPage> {
   bool startNFC = false;
   bool showText = true;
   String address = "";
+
 //inicializo el manejador
   NfcHandler nfcHandler = NfcHandler();
-
 
   List<String> historial = [];
 
@@ -45,14 +40,13 @@ class _ReadPageState extends State<ReadPage> {
     prefs.setStringList('historial', historial);
   }
 
-
-
   void initNFC() async {
     //comprueba si NFC está activado
     bool nfcAvailable = await NfcManager.instance.isAvailable();
-    if(nfcAvailable == false) {
+    if (nfcAvailable == false) {
       setState(() {
-        resultado = "NFC descativado. Por favor, actívalo e inicia de nuevo la lectura.";
+        resultado =
+            "NFC descativado. Por favor, actívalo e inicia de nuevo la lectura.";
       });
       return;
     }
@@ -68,17 +62,21 @@ class _ReadPageState extends State<ReadPage> {
     if (result.startsWith("URL:")) {
       // Es una URL
       setState(() {
-        resultado = "---- URL recibida ----\n\n" + result.substring(4) + "\n\nAbriendo navegador...";
+        resultado = "---- URL recibida ----\n\n" +
+            result.substring(4) +
+            "\n\nAbriendo navegador...";
       });
       // esperar 1 segundo antes de abrir el navegador
       await Future.delayed(Duration(milliseconds: 2000));
 
       String result2 = await nfcHandler.launchURL(result.substring(4));
-      if (result2 == 'No es posible abrir la URL'){
+      if (result2 == 'No es posible abrir la URL') {
         setState(() {
-          resultado = "---- URL recibida ----\n\n" + result.substring(4) + "\n\nNo es posible abrir la URL";
+          resultado = "---- URL recibida ----\n\n" +
+              result.substring(4) +
+              "\n\nNo es posible abrir la URL";
         });
-      } else{
+      } else {
         setState(() {
           resultado = "---- URL recibida ----\n\n" + result.substring(4);
           historial.add(result);
@@ -88,7 +86,13 @@ class _ReadPageState extends State<ReadPage> {
       // Es un contacto
       String contactoData = result.substring(9);
       palabras = contactoData.split("*");
-      resultado = "---- Contacto recibido ----\n\n" + "Nombre: " + palabras[0] + "\nTeléfono: " + palabras[1] + "\nEmail: " + palabras[2];
+      resultado = "---- Contacto recibido ----\n\n" +
+          "Nombre: " +
+          palabras[0] +
+          "\nTeléfono: " +
+          palabras[1] +
+          "\nEmail: " +
+          palabras[2];
       isButtonDisabled = false;
       setState(() {
         resultado;
@@ -114,29 +118,43 @@ class _ReadPageState extends State<ReadPage> {
       String eventData = result.substring(6);
       palabras = eventData.split("*");
       setState(() {
-        resultado = "---- Evento recibido ----\n\n" + "Título: " + palabras[0] + "\nLugar: " + palabras[1] + "\nFecha inicio: " + palabras[2] + "\nFecha fin: " + palabras[3] + "\n\nAbriendo calendario...";
+        resultado = "---- Evento recibido ----\n\n" +
+            "Título: " +
+            palabras[0] +
+            "\nLugar: " +
+            palabras[1] +
+            "\nFecha inicio: " +
+            palabras[2] +
+            "\nFecha fin: " +
+            palabras[3] +
+            "\n\nAbriendo calendario...";
       });
       // esperar 1 segundo antes de abrir calendario
       await Future.delayed(Duration(milliseconds: 3000));
 
       nfcHandler.addEvent(palabras[0], palabras[1], palabras[2], palabras[3]);
       setState(() {
-        resultado = "---- Evento recibido ----\n\n" + "Título: " + palabras[0] + "\nLugar: " + palabras[1] + "\nFecha inicio: " + palabras[2] + "\nFecha fin: " + palabras[3];
+        resultado = "---- Evento recibido ----\n\n" +
+            "Título: " +
+            palabras[0] +
+            "\nLugar: " +
+            palabras[1] +
+            "\nFecha inicio: " +
+            palabras[2] +
+            "\nFecha fin: " +
+            palabras[3];
       });
       historial.add(result);
     }
     guardarHistorial();
   } // initNFC()
 
-
   @override
   Widget build(BuildContext context) {
     return Container(
       color: Colors.deepPurpleAccent,
-      child:
-      Center(
-        child:
-        Column(
+      child: Center(
+        child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Visibility(
@@ -162,19 +180,18 @@ class _ReadPageState extends State<ReadPage> {
                     resultado = "Esperando lectura...";
                   });
                   initNFC();
-
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30.0), // Ajusta el radio según sea necesario
+                    borderRadius: BorderRadius.circular(30.0),
                   ),
                 ),
                 child: Text(
                   "Pulsar para leer",
                   style: TextStyle(
                     color: Colors.black,
-                    fontSize: 15.0, // Ajusta el tamaño del texto según sea necesario
+                    fontSize: 15.0,
                   ),
                 ),
               ),
@@ -182,8 +199,8 @@ class _ReadPageState extends State<ReadPage> {
 
             Visibility(
               visible: startNFC && !locationVisible,
-              child:
-              Text('$resultado',
+              child: Text(
+                '$resultado',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.white,
@@ -193,9 +210,8 @@ class _ReadPageState extends State<ReadPage> {
             ),
 
             Visibility(
-              visible: startNFC && locationVisible,
-              child:
-                RichText(
+                visible: startNFC && locationVisible,
+                child: RichText(
                   textAlign: TextAlign.center,
                   text: TextSpan(
                     style: DefaultTextStyle.of(context).style,
@@ -213,8 +229,7 @@ class _ReadPageState extends State<ReadPage> {
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 20.0,
-                          )
-                      ),
+                          )),
                       TextSpan(
                         text: showText ? "\n\nAbriendo mapas..." : "",
                         style: TextStyle(
@@ -225,17 +240,17 @@ class _ReadPageState extends State<ReadPage> {
                       ),
                     ],
                   ),
-                )
-            ),
+                )),
 
             SizedBox(height: 20),
 
             Visibility(
               visible: startNFC,
-              child:
-              Icon(Icons.tap_and_play,
+              child: Icon(
+                Icons.tap_and_play,
                 color: Colors.white,
-                size: 50,),
+                size: 50,
+              ),
             ),
 
             SizedBox(height: 20), // Espacio entre el texto y el botón
@@ -251,7 +266,6 @@ class _ReadPageState extends State<ReadPage> {
                   );
                   ScaffoldMessenger.of(context).showSnackBar(snackBar);
                   setState(() {
-                    /// desactivo boton
                     isButtonDisabled = true;
                   });
                 },
